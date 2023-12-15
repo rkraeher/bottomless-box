@@ -10,7 +10,7 @@ const crawler = new PlaywrightCrawler({
   // Instead of the long requestHandler with
   // if clauses we provide a router instance.
   requestHandler: router,
-  //   maxRequestsPerCrawl: 20,
+  maxRequestsPerCrawl: 20,
 });
 
 await crawler.run(['https://warehouse-theme-metal.myshopify.com/collections']);
