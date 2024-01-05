@@ -1,5 +1,4 @@
-import { createPlaywrightRouter, Dataset } from 'crawlee';
-import { Page } from 'playwright';
+import { createPlaywrightRouter } from 'crawlee';
 
 export const router = createPlaywrightRouter();
 
@@ -66,36 +65,46 @@ export const router = createPlaywrightRouter();
 //   }
 // });
 
-// This is a fallback route which will handle the start URL
-router.addDefaultHandler(async ({ request, page, enqueueLinks, log }) => {
-  const searchInput = 'input[placeholder="Search store"]';
+router.addHandler('GAME', async ({ request, page }) => {
+  console.log(`The title of "${request.url}" is: `, await page.title());
+  const isAgeCheckFormVisible = await page
+    .locator('span')
+    .filter({
+      hasText:
+        'contains content that is unrated and may not be appropriate for all ages.',
+    })
+    .isVisible();
 
-  const searchTerm = 'Disciples II'; // exists and has two results
-  // const searchTerm = 'Papers, please'; // not found, so the shape of the dom is different,
+  if (isAgeCheckFormVisible) {
+    await page.click('button#month_toggle');
+    // await page.waitForSelector('ul#month_menu');
+    await page
+      .locator('ul#month_menu li button span')
+      .filter({ hasText: '10' })
+      .first()
+      .click();
 
-  const searchResultsContainer = 'div[data-tippy-root] ul';
-
-  await page.fill(searchInput, searchTerm);
-  await page.waitForSelector(searchResultsContainer);
-
-  // TODO: get the full list of items
-  const listOfItems = await page
-    .locator(searchResultsContainer)
-    .getByRole('listitem')
-    // works when the game is found, but need a different locator for the case that the search term has no results
-    .allTextContents();
-  console.log({ listOfItems });
-
-  enqueueLinks();
+    // then select day, year, and finally submit/continue
+    // await page.pause(); // debugging
+  } else {
+    // get the price
+  }
 });
 
-// for testing selectors
-const testSelector = async (selector: string, page: Page) => {
-  const targetedSelector = page.locator(selector);
-  await targetedSelector.waitFor();
-  if (targetedSelector) {
-    console.log('Targeted selector found: ', targetedSelector);
-  } else {
-    console.log('Targeted selector was NOT found');
-  }
-};
+// handle the start URL
+router.addDefaultHandler(async ({ request, page, enqueueLinks }) => {
+  console.log(`Enqueuing search results: ${request.url}`);
+  const searchInputElement = 'input[placeholder="Search store"]';
+
+  const gameName = 'Disciples II'; // exists and has two results. sometimes, the result will force you to enter a birthdate
+  // const gameName = 'Papers, please'; // doesn't exist in their db, so the shape of the dom is different,
+
+  const searchResultItem = 'div[data-tippy-root] ul li a';
+  await page.fill(searchInputElement, gameName);
+  await page.waitForSelector(searchResultItem);
+
+  await enqueueLinks({
+    selector: searchResultItem,
+    label: 'GAME',
+  });
+});
