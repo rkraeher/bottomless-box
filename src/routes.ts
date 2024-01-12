@@ -1,4 +1,5 @@
 import { createPlaywrightRouter } from 'crawlee';
+import { fillAgeCheckForm } from './helpers';
 
 export const router = createPlaywrightRouter();
 
@@ -76,16 +77,10 @@ router.addHandler('GAME', async ({ request, page }) => {
     .isVisible();
 
   if (isAgeCheckFormVisible) {
-    await page.click('button#month_toggle');
-    // await page.waitForSelector('ul#month_menu');
-    await page
-      .locator('ul#month_menu li button span')
-      .filter({ hasText: '10' })
-      .first()
-      .click();
+    await fillAgeCheckForm(page);
 
-    // then select day, year, and finally submit/continue
-    // await page.pause(); // debugging
+    // then, do the same as below, in else block: getPrice()
+    await page.pause(); //!! debugging
   } else {
     // get the price
   }
@@ -94,17 +89,14 @@ router.addHandler('GAME', async ({ request, page }) => {
 // handle the start URL
 router.addDefaultHandler(async ({ request, page, enqueueLinks }) => {
   console.log(`Enqueuing search results: ${request.url}`);
-  const searchInputElement = 'input[placeholder="Search store"]';
-
   const gameName = 'Disciples II'; // exists and has two results. sometimes, the result will force you to enter a birthdate
   // const gameName = 'Papers, please'; // doesn't exist in their db, so the shape of the dom is different,
 
-  const searchResultItem = 'div[data-tippy-root] ul li a';
-  await page.fill(searchInputElement, gameName);
-  await page.waitForSelector(searchResultItem);
-
+  await page.getByPlaceholder('Search store').fill(gameName);
+  const selector = 'div[data-tippy-root] ul li a';
+  await page.waitForSelector(selector);
   await enqueueLinks({
-    selector: searchResultItem,
+    selector,
     label: 'GAME',
   });
 });
