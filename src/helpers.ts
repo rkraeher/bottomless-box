@@ -1,7 +1,10 @@
 import { Dataset, Request } from 'crawlee';
 import { Page } from 'playwright';
 
-export async function fillAgeCheckForm(page: Page) {
+// await page.pause(); //!! debugging
+// npx playwright codegen {url} //!! locator generator
+
+async function fillAgeCheckForm(page: Page) {
   await page.getByRole('button', { name: 'MM' }).click();
   await page.getByRole('menuitem', { name: '10' }).click();
 
@@ -18,12 +21,14 @@ export async function fillAgeCheckForm(page: Page) {
 }
 
 export async function getPrice(page: Page, request: Request) {
-  const price =
-    (await page.getByText('CZK').textContent()) ||
-    (await page.getByText('$').textContent());
+  const price = await page
+    .locator('span')
+    .filter({ hasText: /CZK|\$/ })
+    .first()
+    .textContent();
 
   const results = {
-    name: await page.getByTestId('pdp-title').textContent(),
+    name: await page.getByTestId('offer-title-info-title').textContent(),
     url: request.url,
     price,
   };
