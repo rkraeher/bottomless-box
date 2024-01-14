@@ -4,6 +4,11 @@ import { Page } from 'playwright';
 // await page.pause(); //!! debugging
 // npx playwright codegen {url} //!! locator generator
 
+export function getUrlQueryParam(url: string): string {
+  const queryParam = new URLSearchParams(new URL(url).search).get('q') ?? '';
+  return decodeURIComponent(queryParam);
+}
+
 async function fillAgeCheckForm(page: Page) {
   await page.getByRole('button', { name: 'MM' }).click();
   await page.getByRole('menuitem', { name: '10' }).click();

@@ -1,10 +1,10 @@
 import { createPlaywrightRouter } from 'crawlee';
-import { getPrice } from './helpers';
+import { getPrice, getUrlQueryParam } from './helpers';
 
 export const router = createPlaywrightRouter();
 
-router.addDefaultHandler(async ({ request, page }) => {
+router.addDefaultHandler(async ({ request, page, log }) => {
+  const game = getUrlQueryParam(request.url);
+  log.debug(`Getting price for wishlist item: ${game}`);
   await getPrice(page, request);
 });
-
-// TODO use logging methods, as in their example?
