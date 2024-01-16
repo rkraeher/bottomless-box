@@ -3,15 +3,6 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 
-interface Sub {
-  price: string;
-}
-
-interface Game {
-  name: string;
-  subs: Sub[] | [];
-}
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -20,10 +11,13 @@ export const handleStaticFileRequest = async (
   res: ServerResponse
 ) => {
   const validPaths: Record<string, { file: string; contentType: string }> = {
-    '/': { file: 'index.html', contentType: 'text/html' },
-    '/index.html': { file: 'index.html', contentType: 'text/html' },
-    '/styles.css': { file: 'styles.css', contentType: 'text/css' },
-    '/script.js': { file: 'script.js', contentType: 'text/javascript' },
+    '/': { file: '../client/index.html', contentType: 'text/html' },
+    '/index.html': { file: '../client/index.html', contentType: 'text/html' },
+    '/styles.css': { file: '../client/styles.css', contentType: 'text/css' },
+    '/script.js': {
+      file: '../client/script.js',
+      contentType: 'text/javascript',
+    },
   };
 
   const requestedPath = req.url || '/';

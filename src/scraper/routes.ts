@@ -1,5 +1,5 @@
 import { createPlaywrightRouter } from 'crawlee';
-import { getPrice, getUrlQueryParam } from './helpers';
+import { getPrice, getUrlQueryParam } from '../helpers';
 
 export const router = createPlaywrightRouter();
 

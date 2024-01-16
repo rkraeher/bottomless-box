@@ -1,13 +1,29 @@
 import { Dataset, Request } from 'crawlee';
 import { Page } from 'playwright';
-import { WishlistResponse } from './server';
 
 // await page.pause(); //!! debugging
 // npx playwright codegen {url} //!! locator generator
 
+interface Sub {
+  price: string;
+}
+
+interface SteamGame {
+  name: string;
+  subs: Sub[] | [];
+}
+
+type WishlistResponse = Record<string, SteamGame>;
+type FailedSteamWishlistResponse = { success: 2 };
+
 interface Game {
   [name: string]: string;
 }
+
+// we also should have some sanitization since it is user input
+export const isValidSteamId = (
+  data: WishlistResponse | FailedSteamWishlistResponse
+): boolean => !('success' in data);
 
 export function getUrlQueryParam(url: string): string {
   const queryParam = new URLSearchParams(new URL(url).search).get('q') ?? '';
@@ -46,7 +62,7 @@ export async function getPrice(page: Page, request: Request) {
   await Dataset.pushData(results);
 }
 
-const gefilteredWishlist = (wishlist: WishlistResponse) => {
+export const gefilteredWishlist = (wishlist: WishlistResponse) => {
   const games: Game[] = Object.values(wishlist).map((game) => {
     // if game.subs is empty array, then its either free or coming soon and we should include this info in case it isn't free or is available elsewhere
     const price = game.subs?.[0]?.price;
