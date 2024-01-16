@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" type="text/css" href="./styles.css" />
     <title>Wishlist Prospector</title>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('form');
+
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+
+          const input = document.querySelector('input[name="q"]');
+          const inputValue = input.value;
+
+          fetch('/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ searchText: inputValue }),
+          })
+            .then((response) => response.json())
+            .then((data) => console.log(data))
+            .catch((error) => console.error('Error:', error));
+        });
+      });
+    </script>
   </head>
   <body>
     <header>
@@ -28,9 +51,14 @@
         </svg>
         <h1>Wishlist Prospector</h1>
       </div>
-      <div>
-        <input type="search" placeholder="Your Steam Id" />
-      </div>
+      <form role="search">
+        <input
+          type="search"
+          placeholder="Your Steam Id"
+          name="q"
+          aria-label="Pass your steam id so the script can retrieve your wishlist"
+        />
+      </form>
     </header>
     <main>
       <p>

@@ -8,7 +8,38 @@ const port = 8000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const requestListener = async (req: IncomingMessage, res: ServerResponse) => {
+const handleSearchRequest = async (
+  req: IncomingMessage,
+  res: ServerResponse
+) => {
+  if (req.method === 'POST' && req.url === '/search') {
+    let data = '';
+
+    req.on('data', (chunk) => {
+      data += chunk;
+    });
+
+    req.on('end', () => {
+      try {
+        const parsedData = JSON.parse(data);
+        console.log('Received search input:', parsedData.searchText);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({ message: 'Search input received successfully' })
+        );
+      } catch (error) {
+        console.error('Error parsing JSON:', error);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON data' }));
+      }
+    });
+  }
+};
+
+const handleStaticFileRequest = async (
+  req: IncomingMessage,
+  res: ServerResponse
+) => {
   let filePath = '';
 
   if (req.url === '/' || req.url === '/index.html') {
@@ -31,6 +62,11 @@ const requestListener = async (req: IncomingMessage, res: ServerResponse) => {
     res.writeHead(500);
     res.end(err.message);
   }
+};
+
+const requestListener = async (req: IncomingMessage, res: ServerResponse) => {
+  await handleSearchRequest(req, res);
+  await handleStaticFileRequest(req, res);
 };
 
 const server = http.createServer(requestListener);
