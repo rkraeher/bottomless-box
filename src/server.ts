@@ -67,6 +67,9 @@ const handleStaticFileRequest = async (
   } else if (req.url === '/styles.css') {
     filePath = path.join(__dirname, 'styles.css');
     res.setHeader('Content-Type', 'text/css');
+  } else if (req.url === '/script.js') {
+    filePath = path.join(__dirname, 'script.js');
+    res.setHeader('Content-Type', 'text/javascript');
   } else {
     res.writeHead(404);
     res.end('Not Found');

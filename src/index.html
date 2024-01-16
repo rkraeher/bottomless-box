@@ -5,29 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" type="text/css" href="./styles.css" />
     <title>Wishlist Prospector</title>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        const form = document.querySelector('form');
-
-        form.addEventListener('submit', function (event) {
-          event.preventDefault();
-
-          const input = document.querySelector('input[name="q"]');
-          const inputValue = input.value;
-          const searchUrl = `/search?steamId=${encodeURIComponent(inputValue)}`;
-
-          fetch(searchUrl, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
-            .then((response) => response.json())
-            .then((data) => console.log(data))
-            .catch((error) => console.error('Error:', error));
-        });
-      });
-    </script>
+    <script src="/script.js"></script>
   </head>
   <body>
     <header>
