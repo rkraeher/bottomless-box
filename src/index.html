@@ -20,7 +20,7 @@
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ searchText: inputValue }),
+            body: JSON.stringify({ steamId: inputValue }),
           })
             .then((response) => response.json())
             .then((data) => console.log(data))

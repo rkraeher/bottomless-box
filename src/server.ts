@@ -8,9 +8,25 @@ const port = 8000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+interface Sub {
+  price: string;
+}
+
+interface Game {
+  name: string;
+  subs: Sub[] | [];
+}
+
+type WishlistResponse = Record<string, Game>;
+type FailedSteamWishlistResponse = { success: 2 };
+
+const isValidSteamId = (
+  data: WishlistResponse | FailedSteamWishlistResponse
+): boolean => !('success' in data);
+
 const handleSearchRequest = async (
   req: IncomingMessage,
-  res: ServerResponse
+  _res: ServerResponse
 ) => {
   if (req.method === 'POST' && req.url === '/search') {
     let data = '';
@@ -19,18 +35,27 @@ const handleSearchRequest = async (
       data += chunk;
     });
 
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const parsedData = JSON.parse(data);
-        console.log('Received search input:', parsedData.searchText);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({ message: 'Search input received successfully' })
-        );
+        // const userId = '76561198067142342';
+        const steamWishlistEndpoint = `https://store.steampowered.com/wishlist/profiles/${parsedData.steamId}/wishlistdata/?p=0`;
+
+        await fetch(steamWishlistEndpoint)
+          .then((response) => response.json())
+          .then((data) => {
+            if (!isValidSteamId(data)) {
+              console.info(
+                'No wishlist found for this id. Double check the id and make sure your Steam account is set to public.'
+              );
+            } else {
+              console.log('good steamId');
+              // TODO process the data and pass it to the crawler
+              // console.log(data);
+            }
+          });
       } catch (error) {
-        console.error('Error parsing JSON:', error);
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid JSON data' }));
+        console.error('Error:', error);
       }
     });
   }
@@ -59,8 +84,7 @@ const handleStaticFileRequest = async (
     res.writeHead(200);
     res.end(contents);
   } catch (err: any) {
-    res.writeHead(500);
-    res.end(err.message);
+    console.error('Error: ', err);
   }
 };
 
