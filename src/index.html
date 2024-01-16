@@ -14,13 +14,13 @@
 
           const input = document.querySelector('input[name="q"]');
           const inputValue = input.value;
+          const searchUrl = `/search?steamId=${encodeURIComponent(inputValue)}`;
 
-          fetch('/search', {
-            method: 'POST',
+          fetch(searchUrl, {
+            method: 'GET',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ steamId: inputValue }),
           })
             .then((response) => response.json())
             .then((data) => console.log(data))

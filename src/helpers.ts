@@ -1,8 +1,13 @@
 import { Dataset, Request } from 'crawlee';
 import { Page } from 'playwright';
+import { WishlistResponse } from './server';
 
 // await page.pause(); //!! debugging
 // npx playwright codegen {url} //!! locator generator
+
+interface Game {
+  [name: string]: string;
+}
 
 export function getUrlQueryParam(url: string): string {
   const queryParam = new URLSearchParams(new URL(url).search).get('q') ?? '';
@@ -40,3 +45,19 @@ export async function getPrice(page: Page, request: Request) {
 
   await Dataset.pushData(results);
 }
+
+const gefilteredWishlist = (wishlist: WishlistResponse) => {
+  const games: Game[] = Object.values(wishlist).map((game) => {
+    // if game.subs is empty array, then its either free or coming soon and we should include this info in case it isn't free or is available elsewhere
+    const price = game.subs?.[0]?.price;
+    const formattedPrice = isNaN(parseFloat(price))
+      ? ''
+      : (parseFloat(price) / 100).toFixed(2);
+
+    return {
+      // keep in mind the currency that is used. steam endpoint only includes number without currency
+      [game.name]: formattedPrice,
+    };
+  });
+  console.log(JSON.stringify(games));
+};
