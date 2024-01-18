@@ -1,6 +1,7 @@
 import { IncomingMessage, ServerResponse } from 'http';
-import { isValidSteamId } from '../helpers';
+import { getSteamGamePrices, isValidSteamId } from '../helpers';
 import { host, port } from '../server';
+import { crawlEpicGames } from '../scraper/main';
 
 export const handleSearchRequest = async (
   req: IncomingMessage,
@@ -23,9 +24,13 @@ export const handleSearchRequest = async (
           'No wishlist found for this id. Double-check the id and make sure your Steam account is set to public.'
         );
       } else {
-        console.log('good steamId');
-        // TODO process the data and pass it to the crawler
-        // console.log(data);
+        const games = getSteamGamePrices(data).map(
+          (game) => Object.keys(game)[0]
+        );
+
+        await crawlEpicGames(games);
+
+        // TODO update UI table with results from datasets/default results
       }
     } catch (error) {
       console.error('Error:', error);

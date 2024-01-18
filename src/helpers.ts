@@ -16,7 +16,7 @@ interface SteamGame {
 type WishlistResponse = Record<string, SteamGame>;
 type FailedSteamWishlistResponse = { success: 2 };
 
-interface Game {
+interface SteamGamePrice {
   [name: string]: string;
 }
 
@@ -46,6 +46,7 @@ async function fillAgeCheckForm(page: Page) {
   await page.getByRole('button', { name: 'Continue' }).click();
 }
 
+// getEpicStorePrice
 export async function getPrice(page: Page, request: Request) {
   const price = await page
     .locator('span')
@@ -62,8 +63,10 @@ export async function getPrice(page: Page, request: Request) {
   await Dataset.pushData(results);
 }
 
-export const gefilteredWishlist = (wishlist: WishlistResponse) => {
-  const games: Game[] = Object.values(wishlist).map((game) => {
+export const getSteamGamePrices = (
+  wishlist: WishlistResponse
+): SteamGamePrice[] => {
+  return Object.values(wishlist).map((game) => {
     // if game.subs is empty array, then its either free or coming soon and we should include this info in case it isn't free or is available elsewhere
     const price = game.subs?.[0]?.price;
     const formattedPrice = isNaN(parseFloat(price))
@@ -75,5 +78,4 @@ export const gefilteredWishlist = (wishlist: WishlistResponse) => {
       [game.name]: formattedPrice,
     };
   });
-  console.log(JSON.stringify(games));
 };
