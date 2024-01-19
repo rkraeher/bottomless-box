@@ -54,25 +54,15 @@
               <th>GOG</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Cyberpunk 2077</td>
-              <td>$59.99</td>
-              <td>$59.99</td>
-              <td>$59.99</td>
-            </tr>
-            <tr>
-              <td>The Witcher 3: Wild Hunt</td>
-              <td>$39.99</td>
-              <td>$39.99</td>
-              <td>$39.99</td>
-            </tr>
-            <tr>
-              <td>Red Dead Redemption 2</td>
-              <td>$59.99</td>
-              <td>$59.99</td>
-              <td>$59.99</td>
-            </tr>
+          <tbody id="tableBody">
+            <template id="rowTemplate">
+              <tr>
+                <td class="title"></td>
+                <td class="steam"></td>
+                <td class="epic"></td>
+                <td class="gog"></td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>

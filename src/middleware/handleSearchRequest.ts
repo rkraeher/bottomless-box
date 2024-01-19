@@ -2,6 +2,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 import { getSteamGamePrices, isValidSteamId } from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
+import { Dataset } from 'crawlee';
 
 export const handleSearchRequest = async (
   req: IncomingMessage,
@@ -30,7 +31,9 @@ export const handleSearchRequest = async (
 
         await crawlEpicGames(games);
 
-        // TODO update UI table with results from datasets/default results
+        const output = await Dataset.getData();
+        console.log(output);
+        // TODO update UI table with output from datasets/default results
       }
     } catch (error) {
       console.error('Error:', error);
