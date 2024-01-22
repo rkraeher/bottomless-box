@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', function () {
         'Content-Type': 'application/json',
       },
     })
-      // we don't need to do anything with response because the server handles it
       .then((response) => response.json())
+      // I keep getting undefined for this??
       .then((data) => console.log(data))
       .catch((error) => console.error('Error:', error));
   });
