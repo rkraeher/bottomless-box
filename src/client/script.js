@@ -1,30 +1,28 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('form');
   const results = document.getElementById('results');
 
-  form.addEventListener('submit', function (event) {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const input = document.querySelector('input[name="q"]');
     const inputValue = input.value;
-    const searchUrl = `/search?steamId=${encodeURIComponent(inputValue)}`;
+    const searchEndpoint = `/search?steamId=${encodeURIComponent(inputValue)}`;
 
-    fetch(searchUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('data.items', data.items);
-        results.innerHTML = data.items[4].name;
-      })
-      .catch((error) => console.error('Error:', error));
+    try {
+      const response = await fetch(searchEndpoint);
+      const data = await response.json();
+
+      results.innerHTML = data.items[4].name;
+      // TODO update the whole table
+    } catch (error) {
+      console.error('Error: ', error);
+    }
   });
 });
 
-document.addEventListener('DOMContentLoaded', function () {
+// load some placeholder data...
+document.addEventListener('DOMContentLoaded', () => {
   const data = [
     {
       title: 'Cyberpunk 2077',
@@ -52,7 +50,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const populateTable = (rowData) => {
     const clone = document.importNode(rowTemplate.content, true);
 
-    // TODO Replace with actual data
     clone.querySelector('.title').textContent = rowData.title;
     clone.querySelector('.steam').textContent = rowData.steam;
     clone.querySelector('.epic').textContent = rowData.epic;
