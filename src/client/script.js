@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   const form = document.querySelector('form');
+  const results = document.getElementById('results');
 
   form.addEventListener('submit', function (event) {
     event.preventDefault();
@@ -15,8 +16,10 @@ document.addEventListener('DOMContentLoaded', function () {
       },
     })
       .then((response) => response.json())
-      // I keep getting undefined for this??
-      .then((data) => console.log(data))
+      .then((data) => {
+        console.log('data.items', data.items);
+        results.innerHTML = data.items[4].name;
+      })
       .catch((error) => console.error('Error:', error));
   });
 });

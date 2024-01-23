@@ -7,8 +7,11 @@ export const host = 'localhost';
 export const port = 8000;
 
 const requestListener = async (req: IncomingMessage, res: ServerResponse) => {
-  await handleSearchRequest(req, res);
-  await handleStaticFileRequest(req, res);
+  if (req.url?.startsWith('/search')) {
+    await handleSearchRequest(req, res);
+  } else {
+    await handleStaticFileRequest(req, res);
+  }
 };
 
 const server = http.createServer(requestListener);
