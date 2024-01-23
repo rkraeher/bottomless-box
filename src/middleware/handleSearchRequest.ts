@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http';
-import { getSteamGamePrices, isValidSteamId } from '../helpers';
+import { isValidSteamWishlist, storeWishlistData } from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
 import { Dataset } from 'crawlee';
@@ -18,21 +18,39 @@ export const handleSearchRequest = async (
     const response = await fetch(steamWishlistEndpoint);
     const data = await response.json();
 
-    if (!isValidSteamId(data)) {
+    if (!isValidSteamWishlist(data)) {
       // need to inform user in client
       console.info(
         'No wishlist found for this id. Double-check the id and make sure your Steam account is set to public.'
       );
     } else {
-      const games = getSteamGamePrices(data).map(
-        (game) => Object.keys(game)[0]
-      );
+      await storeWishlistData(data);
+      const steamDataset = await Dataset.open('steam');
+      const steamData = await steamDataset.getData();
+      const wishlist = steamData.items.map((game) => game.name);
 
-      await crawlEpicGames(games);
-      const output = await Dataset.getData();
+      //? turn off for developing UI
+      // await crawlEpicGames(wishlist);
+
+      const epicDataset = await Dataset.open('epic');
+      const epicData = await epicDataset.getData();
+
+      // TODO: now I have to match up and assemble games with same name to price
+      // const output = [
+      //   {
+      //     name: 'dark souls',
+      //     steam: {
+      //       price: '39.99',
+      //     },
+      //     epic: {
+      //       price: 'CZK 800',
+      //       url: 'fromsoftware.com'
+      //     }
+      //   },
+      // ]
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(output));
+      res.end(JSON.stringify(epicData));
     }
   } catch (error) {
     console.error('Error:', error);

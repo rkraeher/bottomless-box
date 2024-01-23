@@ -17,11 +17,12 @@ type WishlistResponse = Record<string, SteamGame>;
 type FailedSteamWishlistResponse = { success: 2 };
 
 interface SteamGamePrice {
-  [name: string]: string;
+  name: string;
+  price: string;
 }
 
 // we also should have some sanitization since it is user input
-export const isValidSteamId = (
+export const isValidSteamWishlist = (
   data: WishlistResponse | FailedSteamWishlistResponse
 ): boolean => !('success' in data);
 
@@ -55,27 +56,36 @@ export async function getPrice(page: Page, request: Request) {
     .textContent();
 
   const results = {
+    // perhaps it would be best to also save the associated steam name. better than matching strings
     name: await page.getByTestId('offer-title-info-title').textContent(),
     url: request.url,
     price,
   };
 
-  await Dataset.pushData(results);
+  const dataset = await Dataset.open('epic');
+  await dataset.pushData(results);
 }
 
-export const getSteamGamePrices = (
+export const storeWishlistData = async (
   wishlist: WishlistResponse
-): SteamGamePrice[] => {
-  return Object.values(wishlist).map((game) => {
+): Promise<void> => {
+  const dataset = await Dataset.open('steam');
+  const gameData: SteamGamePrice[] = Object.values(wishlist).map((game) => {
     // if game.subs is empty array, then its either free or coming soon and we should include this info in case it isn't free or is available elsewhere
     const price = game.subs?.[0]?.price;
     const formattedPrice = isNaN(parseFloat(price))
       ? ''
-      : (parseFloat(price) / 100).toFixed(2);
+      : (parseFloat(price) / 100).toFixed(2); // I should name this function because it manipulates a number that is actually currency
 
     return {
       // keep in mind the currency that is used. steam endpoint only includes number without currency
-      [game.name]: formattedPrice,
+      name: game.name,
+      price: formattedPrice,
     };
+  });
+
+  // without resetting the dataset, it will just append
+  gameData.forEach(async (game) => {
+    await dataset.pushData(game);
   });
 };

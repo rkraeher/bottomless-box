@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch(searchEndpoint);
       const data = await response.json();
       updateUI(data.items);
+
+      // TODO map the steam names/prices
+      // TODO: handle loading state while crawler runs: https://css-loaders.com/arcade/ or /factory
+      // TODO: persist data in local storage
     } catch (error) {
       console.error('Error: ', error);
     }
