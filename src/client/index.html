@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" type="text/css" href="./styles.css" />
     <title>Wishlist Prospector</title>
+    <template id="rowTemplate">
+      <tr>
+        <td class="title"></td>
+        <td class="steam"></td>
+        <td class="epic"></td>
+        <td class="gog"></td>
+      </tr>
+    </template>
     <script src="/script.js"></script>
   </head>
   <body>
@@ -44,7 +52,6 @@
         game prices across different platforms. Simply input a Steam Id to start
         exploring.
       </p>
-      <p id="results"></p>
       <div>
         <table cellspacing="0">
           <thead>
@@ -56,14 +63,24 @@
             </tr>
           </thead>
           <tbody id="tableBody">
-            <template id="rowTemplate">
-              <tr>
-                <td class="title"></td>
-                <td class="steam"></td>
-                <td class="epic"></td>
-                <td class="gog"></td>
-              </tr>
-            </template>
+            <tr>
+              <td>Cyberpunk 2077</td>
+              <td>$59.99</td>
+              <td>$59.99</td>
+              <td>$59.99</td>
+            </tr>
+            <tr>
+              <td>The Witcher 3: Wild Hunt</td>
+              <td>$39.99</td>
+              <td>$39.99</td>
+              <td>$39.99</td>
+            </tr>
+            <tr>
+              <td>Red Dead Redemption 2</td>
+              <td>$59.99</td>
+              <td>$59.99</td>
+              <td>$59.99</td>
+            </tr>
           </tbody>
         </table>
       </div>

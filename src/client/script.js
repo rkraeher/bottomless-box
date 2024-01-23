@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('form');
-  const results = document.getElementById('results');
+  const tableBody = document.getElementById('tableBody');
+  const rowTemplate = document.getElementById('rowTemplate');
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -12,51 +13,27 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(searchEndpoint);
       const data = await response.json();
-
-      results.innerHTML = data.items[4].name;
-      // TODO update the whole table
+      updateUI(data.items);
     } catch (error) {
       console.error('Error: ', error);
     }
   });
-});
 
-// load some placeholder data...
-document.addEventListener('DOMContentLoaded', () => {
-  const data = [
-    {
-      title: 'Cyberpunk 2077',
-      steam: '$59.99',
-      epic: '$59.99',
-      gog: '$59.99',
-    },
-    {
-      title: 'The Witcher 3: Wild Hunt',
-      steam: '$39.99',
-      epic: '$39.99',
-      gog: '$39.99',
-    },
-    {
-      title: 'Red Dead Redemption 2',
-      steam: '$59.99',
-      epic: '$59.99',
-      gog: '$59.99',
-    },
-  ];
+  const updateUI = (data) => {
+    tableBody.innerHTML = '';
 
-  const rowTemplate = document.getElementById('rowTemplate');
-  const tableBody = document.getElementById('tableBody');
+    const populateTable = (item) => {
+      const clone = document.importNode(rowTemplate.content, true);
 
-  const populateTable = (rowData) => {
-    const clone = document.importNode(rowTemplate.content, true);
+      clone.querySelector('.title').textContent = item.name;
+      // also wrap it an anchor link to this, item.url
+      clone.querySelector('.epic').textContent = item.price;
+      clone.querySelector('.steam').textContent = '';
+      clone.querySelector('.gog').textContent = '';
 
-    clone.querySelector('.title').textContent = rowData.title;
-    clone.querySelector('.steam').textContent = rowData.steam;
-    clone.querySelector('.epic').textContent = rowData.epic;
-    clone.querySelector('.gog').textContent = rowData.gog;
+      tableBody?.appendChild(clone);
+    };
 
-    tableBody.appendChild(clone);
+    data.forEach(populateTable);
   };
-
-  data.forEach(populateTable);
 });
