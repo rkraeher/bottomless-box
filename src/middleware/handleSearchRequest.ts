@@ -11,6 +11,8 @@ export const handleSearchRequest = async (
   const url = new URL(`http://${host}:${port}${req.url}`);
   const steamId = url.searchParams.get('steamId');
 
+  // TODO: instead of running the scraper on request, after the first time, I can cache the results and run the scraper once a day. Then add some 'refresh' feature
+
   try {
     //?? const userId = '76561198067142342';
     const steamWishlistEndpoint = `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=0`;
@@ -27,27 +29,23 @@ export const handleSearchRequest = async (
       await storeWishlistData(data);
       const steamDataset = await Dataset.open('steam');
       const steamData = await steamDataset.getData();
-      const wishlist = steamData.items.map((game) => game.name);
+      const wishlist: string[] = steamData.items.map((game) => game.name);
 
       //? turn off for developing UI
-      // await crawlEpicGames(wishlist);
+      await crawlEpicGames(wishlist);
 
       const epicDataset = await Dataset.open('epic');
       const epicData = await epicDataset.getData();
 
-      // TODO: now I have to match up and assemble games with same name to price
-      // const output = [
-      //   {
-      //     name: 'dark souls',
-      //     steam: {
-      //       price: '39.99',
-      //     },
-      //     epic: {
-      //       price: 'CZK 800',
-      //       url: 'fromsoftware.com'
-      //     }
-      //   },
-      // ]
+      // TODO: now I have to match up and assemble games with same name to price.
+      // I can use the steam name as a uniqueKey
+      // But, sometimes the epic store will give search results for a completely different game (e.g., DREDGE query returns Dead by Daylight)
+      // How should we account for these mismatches?
+      // 1. the partial title match custom algo (helpers.ts)
+      // *2. release date, publisher, and developer (all this data is available at the following steam endpoint: https://store.steampowered.com/api/appdetails?appids={APP_IDS}
+      // * as that data is not going to change, I can store the results in some DB to avoid having to call the endpoint and getting throttled
+      // * also, this endpoint includes more precise pricing information about currency
+      // * in order to get that data for an epic store game, I need to proceed into the game detail page, passing any ageCheck form, and scrape the data from that page
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(epicData));
