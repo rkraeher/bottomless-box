@@ -1,5 +1,10 @@
 import { IncomingMessage, ServerResponse } from 'http';
-import { isValidSteamWishlist, storeWishlistData } from '../helpers';
+import {
+  Game,
+  isValidSteamWishlist,
+  mergeGameInfo,
+  storeWishlistData,
+} from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
 import { Dataset } from 'crawlee';
@@ -29,17 +34,24 @@ export const handleSearchRequest = async (
       await storeWishlistData(data);
       const steamDataset = await Dataset.open('steam');
       const steamData = await steamDataset.getData();
-      const wishlist: string[] = steamData.items.map((game) => game.name);
+      const steamGames = steamData.items as Game[];
 
+      const wishlist: string[] = steamGames.map((game) => game.name);
       //? turn off for developing UI
-      await crawlEpicGames(wishlist);
+      // await crawlEpicGames(wishlist);
 
       const epicDataset = await Dataset.open('epic');
       const epicData = await epicDataset.getData();
+      const epicGames = epicData.items as Game[];
 
-      // TODO: now I have to match up and assemble games with same name to price.
-      // I can use the steam name as a uniqueKey
-      // But, sometimes the epic store will give search results for a completely different game (e.g., DREDGE query returns Dead by Daylight)
+      const map = new Map();
+      mergeGameInfo(map, steamGames, 'steam');
+      mergeGameInfo(map, epicGames, 'epic');
+
+      const allGames = Array.from(map.values());
+      console.log(allGames, allGames.length);
+
+      // TODO: sometimes the epic store will give search results for a completely different game (e.g., DREDGE query returns Dead by Daylight)
       // How should we account for these mismatches?
       // 1. the partial title match custom algo (helpers.ts)
       // *2. release date, publisher, and developer (all this data is available at the following steam endpoint: https://store.steampowered.com/api/appdetails?appids={APP_IDS}

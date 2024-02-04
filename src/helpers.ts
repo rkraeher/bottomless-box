@@ -21,6 +21,41 @@ interface SteamGamePrice {
   price: string;
 }
 
+export interface Game {
+  uniqueKey: string;
+  name: string;
+  price: string;
+  url?: string;
+}
+
+interface GameInfo {
+  key: string;
+  steam?: Omit<Game, 'uniqueKey'>;
+  epic?: Omit<Game, 'uniqueKey'>;
+}
+
+export type BaseMap = Map<string, GameInfo>;
+
+export const mergeGameInfo = (
+  baseMap: BaseMap,
+  games: Game[],
+  platformKey: 'steam' | 'epic'
+) => {
+  games.forEach((game) => {
+    const existingInfo = baseMap.get(game.uniqueKey) ?? {
+      key: game.uniqueKey,
+    };
+    baseMap.set(game.uniqueKey, {
+      ...existingInfo,
+      [platformKey]: {
+        name: game.name,
+        price: game.price,
+        ...(platformKey === 'epic' && { url: game.url }),
+      },
+    });
+  });
+};
+
 // we also should have some sanitization since it is user input
 export const isValidSteamWishlist = (
   data: WishlistResponse | FailedSteamWishlistResponse
