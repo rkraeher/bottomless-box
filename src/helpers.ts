@@ -16,9 +16,23 @@ interface SteamGame {
 type WishlistResponse = Record<string, SteamGame>;
 type FailedSteamWishlistResponse = { success: 2 };
 
-interface SteamGamePrice {
+interface PriceOverview {
+  price_overview: {
+    initial_formatted: string;
+    final_formatted: string;
+    discount_percent: number;
+  };
+}
+interface AppDetails {
+  data: PriceOverview;
+}
+
+type AppDetailsResponse = Record<string, AppDetails>;
+interface SteamApiData {
+  appId: string;
+  uniqueKey: string;
   name: string;
-  price: string;
+  currentPrice: string;
 }
 
 export interface Game {
@@ -112,20 +126,34 @@ export const storeWishlistData = async (
   await existingDataset.drop(); // reset the dataset, otherwise it will append. alternatively we could implement some dedupping logic
   const dataset = await Dataset.open('steam');
 
-  const gameData: SteamGamePrice[] = Object.values(wishlist).map((game) => {
-    // if game.subs is empty array, then its either free or coming soon and we should include this info in case it isn't free or is available elsewhere
-    const price = game.subs?.[0]?.price;
-    const formattedPrice = isNaN(parseFloat(price))
-      ? ''
-      : (parseFloat(price) / 100).toFixed(2); // I should name this function because it manipulates a number that is actually currency.
+  const steamAppIds = Object.keys(wishlist).join(',');
+  const steamAppDetailsEndpoint = `https://store.steampowered.com/api/appdetails?appids=${steamAppIds}&filters=price_overview`; // filters param must be set to price_overview when passing multiple appids
+  const response = await fetch(steamAppDetailsEndpoint);
+  const appDetails: AppDetailsResponse = await response.json();
 
-    return {
-      // keep in mind the currency that is used. steam wishlist endpoint only includes number without currency
-      name: game.name,
-      uniqueKey: game.name,
-      price: formattedPrice,
-    };
-  });
+  // each steam endpoint, /wishlist and /appdetails, only provides part of the data we need, so we must call both and match them to get the data we need
+  const gameData: SteamApiData[] = Object.entries(wishlist)
+    .map((game) => {
+      const matchingGameData = Object.entries(appDetails).find(
+        (item) => item[0] === game[0] // match by appId string
+      );
+
+      if (matchingGameData) {
+        const appId = matchingGameData[0];
+        const name = game[1].name;
+        const currentPrice =
+          matchingGameData[1].data?.price_overview?.final_formatted ?? '';
+
+        return {
+          appId,
+          uniqueKey: name,
+          name,
+          currentPrice,
+        };
+      }
+      return;
+    })
+    .filter((game): game is SteamApiData => game !== undefined);
 
   await dataset.pushData(gameData);
 };

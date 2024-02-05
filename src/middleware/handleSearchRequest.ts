@@ -21,7 +21,6 @@ export const handleSearchRequest = async (
   try {
     //?? const userId = '76561198067142342';
     const steamWishlistEndpoint = `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=0`;
-
     const response = await fetch(steamWishlistEndpoint);
     const data = await response.json();
 
@@ -32,6 +31,7 @@ export const handleSearchRequest = async (
       );
     } else {
       await storeWishlistData(data);
+      // console.log(data);
       const steamDataset = await Dataset.open('steam');
       const steamData = await steamDataset.getData();
       const steamGames = steamData.items as Game[];
@@ -49,7 +49,7 @@ export const handleSearchRequest = async (
       mergeGameInfo(map, epicGames, 'epic');
 
       const allGames = Array.from(map.values());
-      console.log(allGames, allGames.length);
+      // console.log(allGames, allGames.length);
 
       // TODO: sometimes the epic store will give search results for a completely different game (e.g., DREDGE query returns Dead by Daylight)
       // How should we account for these mismatches?
