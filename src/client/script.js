@@ -12,10 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const response = await fetch(searchEndpoint);
-      const data = await response.json();
-      updateUI(data.items);
+      const data = await response.json(); // GameInfo[]
+      updateUI(data);
 
-      // TODO map the steam names/prices
       // TODO: handle loading state while crawler runs: https://css-loaders.com/arcade/ or /factory
       // TODO: persist data in local storage
     } catch (error) {
@@ -26,13 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateUI = (data) => {
     tableBody.innerHTML = '';
 
-    const populateTable = (item) => {
+    const populateTable = (game) => {
       const clone = document.importNode(rowTemplate.content, true);
 
-      clone.querySelector('.title').textContent = item.name;
+      clone.querySelector('.title').textContent = game.key;
       // also wrap it an anchor link to this, item.url
-      clone.querySelector('.epic').textContent = item.price;
-      clone.querySelector('.steam').textContent = '';
+      clone.querySelector('.epic').textContent = game?.epic?.price ?? '';
+      clone.querySelector('.steam').textContent = game?.steam?.price ?? '';
       clone.querySelector('.gog').textContent = '';
 
       tableBody?.appendChild(clone);

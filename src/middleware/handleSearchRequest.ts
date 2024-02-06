@@ -1,6 +1,7 @@
 import { IncomingMessage, ServerResponse } from 'http';
 import {
   Game,
+  GameInfo,
   isValidSteamWishlist,
   mergeGameInfo,
   storeWishlistData,
@@ -31,7 +32,6 @@ export const handleSearchRequest = async (
       );
     } else {
       await storeWishlistData(data);
-      // console.log(data);
       const steamDataset = await Dataset.open('steam');
       const steamData = await steamDataset.getData();
       const steamGames = steamData.items as Game[];
@@ -48,19 +48,18 @@ export const handleSearchRequest = async (
       mergeGameInfo(map, steamGames, 'steam');
       mergeGameInfo(map, epicGames, 'epic');
 
-      const allGames = Array.from(map.values());
-      // console.log(allGames, allGames.length);
+      const allGames: GameInfo[] = Array.from(map.values());
 
       // TODO: sometimes the epic store will give search results for a completely different game (e.g., DREDGE query returns Dead by Daylight)
       // How should we account for these mismatches?
       // 1. the partial title match custom algo (helpers.ts)
       // *2. release date, publisher, and developer (all this data is available at the following steam endpoint: https://store.steampowered.com/api/appdetails?appids={APP_IDS}
+      // * however, to use that endpoint and get release/publisher/developer data, I must call the endpoint one game at a time
       // * as that data is not going to change, I can store the results in some DB to avoid having to call the endpoint and getting throttled
-      // * also, this endpoint includes more precise pricing information about currency
       // * in order to get that data for an epic store game, I need to proceed into the game detail page, passing any ageCheck form, and scrape the data from that page
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(epicData));
+      res.end(JSON.stringify(allGames));
     }
   } catch (error) {
     console.error('Error:', error);

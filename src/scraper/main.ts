@@ -20,5 +20,5 @@ export const crawlEpicGames = async (games: string[]) => {
     requestHandler: router,
   });
 
-  await crawler.run(requests);
+  await crawler.run([requests[0]]);
 };

@@ -32,7 +32,7 @@ interface SteamApiData {
   appId: string;
   uniqueKey: string;
   name: string;
-  currentPrice: string;
+  price: string;
 }
 
 export interface Game {
@@ -42,7 +42,7 @@ export interface Game {
   url?: string;
 }
 
-interface GameInfo {
+export interface GameInfo {
   key: string;
   steam?: Omit<Game, 'uniqueKey'>;
   epic?: Omit<Game, 'uniqueKey'>;
@@ -100,7 +100,7 @@ async function fillAgeCheckForm(page: Page) {
 export async function getPrice(page: Page, request: Request) {
   const price = await page
     .locator('span')
-    .filter({ hasText: /CZK|\$/ })
+    .filter({ hasText: /CZK|\$|\€/ })
     .first()
     .textContent();
 
@@ -148,7 +148,7 @@ export const storeWishlistData = async (
           appId,
           uniqueKey: name,
           name,
-          currentPrice,
+          price: currentPrice,
         };
       }
       return;
