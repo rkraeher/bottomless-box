@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // TODO: handle loading state while crawler runs: https://css-loaders.com/arcade/ or /factory
       // TODO: persist data in local storage
+      // TODO: filters and pagination
     } catch (error) {
       console.error('Error: ', error);
     }

@@ -98,18 +98,20 @@ async function fillAgeCheckForm(page: Page) {
 
 // getEpicStorePrice
 export async function getPrice(page: Page, request: Request) {
+  // !! on 'no results', this price locator will match and pass a long string of text to the price attribute
   const price = await page
     .locator('span')
     .filter({ hasText: /CZK|\$|\€/ })
     .first()
     .textContent();
 
-  //!! this is actually returning the full price, not the currently on sale price.
+  // !! this is actually returning the full price, not the currently on sale price.
   // to fix that, we should check for text related to 'sale ends', -50%, and use the lower numeric value of multiple matched price strings (420 > 210)
   // fortunately, looks like steam subs[0].price property uses the actual, discounted price
 
   const results = {
-    name: await page.getByTestId('offer-title-info-title').textContent(),
+    // name: '', // so the scraper was failing because it was a waiting a locator that wasn't present on the page for the title. How can I account for this?
+    name: await page.getByTestId('one-line-text').textContent(), // this one also sometimes fails. better to use aria-label, or find a span with 'base game' and then a child div within that
     uniqueKey: request.uniqueKey,
     url: request.url,
     price,
@@ -123,7 +125,7 @@ export const storeWishlistData = async (
   wishlist: WishlistResponse
 ): Promise<void> => {
   const existingDataset = await Dataset.open('steam');
-  await existingDataset.drop(); // reset the dataset, otherwise it will append. alternatively we could implement some dedupping logic
+  await existingDataset.drop(); // reset the dataset, otherwise it will append
   const dataset = await Dataset.open('steam');
 
   const steamAppIds = Object.keys(wishlist).join(',');
@@ -131,23 +133,21 @@ export const storeWishlistData = async (
   const response = await fetch(steamAppDetailsEndpoint);
   const appDetails: AppDetailsResponse = await response.json();
 
-  // each steam endpoint, /wishlist and /appdetails, only provides part of the data we need, so we must call both and match them to get the data we need
   const gameData: SteamApiData[] = Object.entries(wishlist)
-    .map((game) => {
-      const matchingGameData = Object.entries(appDetails).find(
-        (item) => item[0] === game[0] // match by appId string
+    .map(([steamAppId, wishlistData]) => {
+      const matchingGameDetails = Object.entries(appDetails).find(
+        ([appId]) => appId === steamAppId
       );
 
-      if (matchingGameData) {
-        const appId = matchingGameData[0];
-        const name = game[1].name;
+      if (matchingGameDetails) {
+        const [appId, gameDetails] = matchingGameDetails;
         const currentPrice =
-          matchingGameData[1].data?.price_overview?.final_formatted ?? '';
+          gameDetails?.data?.price_overview?.final_formatted ?? '';
 
         return {
           appId,
-          uniqueKey: name,
-          name,
+          uniqueKey: wishlistData.name,
+          name: wishlistData.name,
           price: currentPrice,
         };
       }
@@ -180,5 +180,4 @@ const gameTitle1 = 'The Legend of Zelda: Breath of the Wild';
 const gameTitle2 = 'Zelda Breath Wild Legend';
 
 const isPartialMatch = partialMatch(gameTitle1, gameTitle2);
-
 // console.log(`Are titles partially matched? ${isPartialMatch}`);
