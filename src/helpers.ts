@@ -1,5 +1,6 @@
-import { Dataset, Request } from 'crawlee';
+import { Dataset, Request, log } from 'crawlee';
 import { Page } from 'playwright';
+import { UserData } from './scraper/routes';
 
 // await page.pause(); //!! debugging
 // npx playwright codegen {url} //!! locator generator
@@ -96,22 +97,22 @@ async function fillAgeCheckForm(page: Page) {
   await page.getByRole('button', { name: 'Continue' }).click();
 }
 
-// getEpicStorePrice
-export async function getPrice(page: Page, request: Request) {
-  // !! on 'no results', this price locator will match and pass a long string of text to the price attribute
+export async function getEpicStorePrice(
+  page: Page,
+  request: Request<UserData>
+) {
+  const { game } = request.userData;
+
   const price = await page
     .locator('span')
     .filter({ hasText: /CZK|\$|\€/ })
-    .first()
-    .textContent();
+    .allTextContents()
+    .catch((e) => log.error(e));
 
-  // !! this is actually returning the full price, not the currently on sale price.
-  // to fix that, we should check for text related to 'sale ends', -50%, and use the lower numeric value of multiple matched price strings (420 > 210)
-  // fortunately, looks like steam subs[0].price property uses the actual, discounted price
+  // TODO: if (price.length > 1) how to decide which one we use? Last item on array or somehow parse and use the smaller number?
 
   const results = {
-    // name: '', // so the scraper was failing because it was a waiting a locator that wasn't present on the page for the title. How can I account for this?
-    name: await page.getByTestId('one-line-text').textContent(), // this one also sometimes fails. better to use aria-label, or find a span with 'base game' and then a child div within that
+    name: game,
     uniqueKey: request.uniqueKey,
     url: request.url,
     price,
@@ -121,7 +122,7 @@ export async function getPrice(page: Page, request: Request) {
   await dataset.pushData(results);
 }
 
-export const storeWishlistData = async (
+export const createSteamWishlistDataset = async (
   wishlist: WishlistResponse
 ): Promise<void> => {
   const existingDataset = await Dataset.open('steam');
@@ -158,7 +159,7 @@ export const storeWishlistData = async (
   await dataset.pushData(gameData);
 };
 
-const partialMatch = (title1: string, title2: string): boolean => {
+export const partialMatch = (title1: string, title2: string): boolean => {
   const normalize = (text: string) =>
     text
       .toLowerCase()
@@ -176,8 +177,7 @@ const partialMatch = (title1: string, title2: string): boolean => {
 };
 
 // Example usage
-const gameTitle1 = 'The Legend of Zelda: Breath of the Wild';
-const gameTitle2 = 'Zelda Breath Wild Legend';
-
-const isPartialMatch = partialMatch(gameTitle1, gameTitle2);
-// console.log(`Are titles partially matched? ${isPartialMatch}`);
+// const gameTitle1 = 'The Legend of Zelda: Breath of the Wild';
+// const gameTitle2 = 'Zelda Breath Wild Legend';
+// const isPartialMatch = partialMatch(gameTitle1, gameTitle2);
+// returns true

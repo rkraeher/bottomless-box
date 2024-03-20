@@ -4,7 +4,7 @@ import {
   GameInfo,
   isValidSteamWishlist,
   mergeGameInfo,
-  storeWishlistData,
+  createSteamWishlistDataset,
 } from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
@@ -31,14 +31,14 @@ export const handleSearchRequest = async (
         'No wishlist found for this id. Double-check the id and make sure your Steam account is set to public.'
       );
     } else {
-      await storeWishlistData(data);
+      await createSteamWishlistDataset(data);
       const steamDataset = await Dataset.open('steam');
       const steamData = await steamDataset.getData();
       const steamGames = steamData.items as Game[];
 
       const wishlist: string[] = steamGames.map((game) => game.name);
       //? turn off for developing UI
-      // await crawlEpicGames(wishlist);
+      await crawlEpicGames(wishlist);
 
       const epicDataset = await Dataset.open('epic');
       const epicData = await epicDataset.getData();

@@ -12,14 +12,22 @@ export const crawlEpicGames = async (games: string[]) => {
     uniqueKey: game,
   }));
 
-  log.debug('Setting up crawler.');
-
   const crawler = new PlaywrightCrawler({
     // headless: false,
     maxRequestsPerCrawl: 20,
     requestHandler: router,
+    maxRequestRetries: 2,
+    // failedRequestHandler
   });
 
+  // ? for dev
   // await crawler.run([requests[0]]);
-  await crawler.run(requests);
+  await crawler.run([
+    'https://store.epicgames.com/en-US/browse?q=Alan%20Wake&sortBy=relevancy&sortDir=DESC&count=40',
+  ]);
+
+  // const slicedRequests = requests.slice(0, 5);
+  // await crawler.run(slicedRequests);
+
+  // await crawler.run(requests);
 };
