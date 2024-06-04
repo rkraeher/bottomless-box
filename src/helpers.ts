@@ -31,13 +31,13 @@ interface AppDetails {
 type AppDetailsResponse = Record<string, AppDetails>;
 interface SteamApiData {
   appId: string;
-  uniqueKey: string;
+  primaryKey: string;
   name: string;
   price: string;
 }
 
 export interface Game {
-  uniqueKey: string;
+  primaryKey: string;
   name: string;
   price: string;
   url?: string;
@@ -45,8 +45,8 @@ export interface Game {
 
 export interface GameInfo {
   key: string;
-  steam?: Omit<Game, 'uniqueKey'>;
-  epic?: Omit<Game, 'uniqueKey'>;
+  steam?: Omit<Game, 'primaryKey'>;
+  epic?: Omit<Game, 'primaryKey'>;
 }
 
 export type BaseMap = Map<string, GameInfo>;
@@ -57,10 +57,11 @@ export const mergeGameInfo = (
   platformKey: 'steam' | 'epic'
 ) => {
   games.forEach((game) => {
-    const existingInfo = baseMap.get(game.uniqueKey) ?? {
-      key: game.uniqueKey,
+    const existingInfo = baseMap.get(game.primaryKey) ?? {
+      key: game.primaryKey,
     };
-    baseMap.set(game.uniqueKey, {
+
+    baseMap.set(game.primaryKey, {
       ...existingInfo,
       [platformKey]: {
         name: game.name,
@@ -101,7 +102,7 @@ export async function getEpicStorePrice(
   page: Page,
   request: Request<UserData>
 ) {
-  const { game } = request.userData;
+  const { primaryKey, game } = request.userData;
 
   const price = await page
     .locator('span')
@@ -113,11 +114,12 @@ export async function getEpicStorePrice(
 
   const results = {
     name: game,
-    uniqueKey: request.uniqueKey,
+    primaryKey,
     url: request.url,
     price,
   };
 
+  // TODO: handle duplicates
   const dataset = await Dataset.open('epic');
   await dataset.pushData(results);
 }
@@ -125,8 +127,7 @@ export async function getEpicStorePrice(
 export const createSteamWishlistDataset = async (
   wishlist: WishlistResponse
 ): Promise<void> => {
-  const existingDataset = await Dataset.open('steam');
-  await existingDataset.drop(); // reset the dataset, otherwise it will append
+  await Dataset.open('steam').then((dataset) => dataset.drop()); // reset the dataset, otherwise it will append
   const dataset = await Dataset.open('steam');
 
   const steamAppIds = Object.keys(wishlist).join(',');
@@ -146,9 +147,9 @@ export const createSteamWishlistDataset = async (
           gameDetails?.data?.price_overview?.final_formatted ?? '';
 
         return {
-          appId,
-          uniqueKey: wishlistData.name,
           name: wishlistData.name,
+          primaryKey: wishlistData.name,
+          appId,
           price: currentPrice,
         };
       }
@@ -181,3 +182,9 @@ export const partialMatch = (title1: string, title2: string): boolean => {
 // const gameTitle2 = 'Zelda Breath Wild Legend';
 // const isPartialMatch = partialMatch(gameTitle1, gameTitle2);
 // returns true
+
+export const getGames = async (key: string) => {
+  return (await Dataset.open(key)
+    .then((dataset) => dataset.getData())
+    .then((data) => data.items)) as Game[];
+};

@@ -5,10 +5,10 @@ import {
   isValidSteamWishlist,
   mergeGameInfo,
   createSteamWishlistDataset,
+  getGames,
 } from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
-import { Dataset } from 'crawlee';
 
 export const handleSearchRequest = async (
   req: IncomingMessage,
@@ -32,17 +32,10 @@ export const handleSearchRequest = async (
       );
     } else {
       await createSteamWishlistDataset(data);
-      const steamDataset = await Dataset.open('steam');
-      const steamData = await steamDataset.getData();
-      const steamGames = steamData.items as Game[];
+      const steamGames = await getGames('steam');
 
-      const wishlist: string[] = steamGames.map((game) => game.name);
-      //? turn off for developing UI
-      await crawlEpicGames(wishlist);
-
-      const epicDataset = await Dataset.open('epic');
-      const epicData = await epicDataset.getData();
-      const epicGames = epicData.items as Game[];
+      await crawlEpicGames(steamGames);
+      const epicGames = await getGames('epic');
 
       const map = new Map();
       mergeGameInfo(map, steamGames, 'steam');
@@ -52,7 +45,7 @@ export const handleSearchRequest = async (
 
       // TODO: sometimes the epic store will give search results for a completely different game (e.g., DREDGE query returns Dead by Daylight)
       // How should we account for these mismatches?
-      // 1. the partial title match custom algo (helpers.ts)
+      // 1. the partialMatch title matching custom algo (helpers.ts)
       // *2. release date, publisher, and developer (all this data is available at the following steam endpoint: https://store.steampowered.com/api/appdetails?appids={APP_IDS}
       // * however, to use that endpoint and get release/publisher/developer data, I must call the endpoint one game at a time
       // * as that data is not going to change, I can store the results in some DB to avoid having to call the endpoint and getting throttled
