@@ -46,13 +46,8 @@ router.addDefaultHandler(async ({ request, page, log, enqueueLinks }) => {
 
   const link =
     (await page
-      .getByLabel(/Base Game|Add-On/)
+      .getByLabel(/Base Game/)
       .first()
-      // TODO: improve. first() it could be wrong because it could some Add-On, not the Base Game
-      //e.g. Alan Wake 'https://store.epicgames.com/en-US/browse?q=Alan%20Wake&sortBy=relevancy&sortDir=DESC&count=40'
-      // Options: 1. we match the first link that includes 'Base Game'
-      // 2. We remove the Add-On pattern because for now we dont care about it?
-      // If there is multiple Base Games, what do we do then?
       .getAttribute('href')
       .catch((e) => log.error(e))) ?? '';
 

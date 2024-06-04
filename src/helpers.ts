@@ -51,6 +51,15 @@ export interface GameInfo {
 
 export type BaseMap = Map<string, GameInfo>;
 
+interface EpicGamesStoreListing {
+  name: string;
+  primaryKey: string;
+  url: string;
+  originalPrice: string;
+  price: string;
+  // currentPrice: string;
+}
+
 export const mergeGameInfo = (
   baseMap: BaseMap,
   games: Game[],
@@ -104,24 +113,36 @@ export async function getEpicStorePrice(
 ) {
   const { primaryKey, game } = request.userData;
 
-  const price = await page
-    .locator('span')
-    .filter({ hasText: /CZK|\$|\€/ })
-    .allTextContents()
-    .catch((e) => log.error(e));
+  const prices: string[] =
+    (await page
+      .locator('span')
+      .filter({ hasText: /CZK|\$|\€/ })
+      .allTextContents()
+      .catch((e) => log.error(e))) ?? [];
 
-  // TODO: if (price.length > 1) how to decide which one we use? Last item on array or somehow parse and use the smaller number?
+  // Edgecases
+  // null (coming soon) price: https://store.epicgames.com/en-US/p/journey-to-the-west-7607ad
+  // free price: https://store.epicgames.com/en-US/p/the-invincible-iron-ivyenter-the-pretty-pretty-princess-ed912d
 
-  const results = {
+  const [originalPrice, discountedPrice] = prices && prices.slice(0, 2);
+
+  const result: EpicGamesStoreListing = {
     name: game,
     primaryKey,
     url: request.url,
-    price,
+    originalPrice,
+    price: discountedPrice ?? originalPrice,
+    // TODO originalPrice/currentPrice replaces previous interface that was just using price property. must modify the steam wishlist output, mergeData function and client mapping script.js
   };
 
-  // TODO: handle duplicates
   const dataset = await Dataset.open('epic');
-  await dataset.pushData(results);
+  const isDuplicate = await dataset
+    .getData()
+    .then((data) => data.items.some((item) => item.primaryKey === primaryKey));
+
+  if (!isDuplicate) {
+    await dataset.pushData(result);
+  }
 }
 
 export const createSteamWishlistDataset = async (
