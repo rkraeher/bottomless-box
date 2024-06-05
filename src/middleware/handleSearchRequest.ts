@@ -6,6 +6,7 @@ import {
   mergeGameInfo,
   createSteamWishlistDataset,
   getGames,
+  WishlistResponse,
 } from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
@@ -22,8 +23,8 @@ export const handleSearchRequest = async (
   try {
     //?? const userId = '76561198067142342';
     const steamWishlistEndpoint = `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=0`;
-    const response = await fetch(steamWishlistEndpoint);
-    const data = await response.json();
+    const response: Response = await fetch(steamWishlistEndpoint);
+    const data: WishlistResponse = await response.json();
 
     if (!isValidSteamWishlist(data)) {
       // need to inform user in client

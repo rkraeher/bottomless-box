@@ -14,28 +14,40 @@ interface SteamGame {
   subs: Sub[] | [];
 }
 
-type WishlistResponse = Record<string, SteamGame>;
+export type WishlistResponse = Record<string, SteamGame>;
 type FailedSteamWishlistResponse = { success: 2 };
 
 interface PriceOverview {
-  price_overview: {
-    initial_formatted: string;
-    final_formatted: string;
-    discount_percent: number;
-  };
+  initial_formatted: string;
+  final_formatted: string;
+  discount_percent: number;
+}
+
+interface ReleaseDate {
+  coming_soon: boolean;
+  date: string;
 }
 interface AppDetails {
-  data: { name: string }; // TODO change me
+  data: {
+    name: string;
+    developers: string[];
+    publishers: string[];
+    price_overview: PriceOverview;
+    release_date: ReleaseDate;
+  };
 }
 
 type AppDetailsResponse = Record<string, AppDetails>;
-interface SteamApiData {
-  appId: string;
-  primaryKey: string;
-  name: string;
-  price: string;
-}
 
+interface GameDetails {
+  name: string;
+  primaryKey: string;
+  developers: string[];
+  publishers: string[];
+  price: string;
+  releaseDate: string;
+  appId: string;
+}
 export interface Game {
   primaryKey: string;
   name: string;
@@ -150,26 +162,38 @@ export const createSteamWishlistDataset = async (
   const dataset = await Dataset.open('steam');
 
   const appIds = Object.keys(wishlist);
-  const devSample = appIds.slice(0, 4);
+  const devSample = appIds.slice(0, 10);
 
-  // appIds.forEach ...
+  // ? for dev but should loop appIds
   devSample.forEach(async (appId) => {
-    // fix the types
-    // AppDetailsResponse;
-    const response: any = await fetch(
-      `https://store.steampowered.com/api/appdetails?appids=${appId}`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        // each response is an object with appId as key, and data is a property on that response object
-        return Object.values(data).map((response: any) => {
-          // developers: string[], publishers: string[], price_overview.final_formatted, and release_date: { coming_soon: boolean, date: string }
-          const { name, developers } = response.data as any;
-          return { name, developers };
-        });
+    try {
+      const response: Response = await fetch(
+        `https://store.steampowered.com/api/appdetails?appids=${appId}`
+      );
+      const data: AppDetailsResponse = await response.json();
+
+      const gameDetails: GameDetails[] = Object.values(data).map((game) => {
+        const { name, developers, publishers, price_overview, release_date } =
+          game.data;
+
+        const currentPrice = price_overview?.final_formatted ?? '';
+        const releaseDate = release_date?.date ?? '';
+
+        return {
+          name,
+          primaryKey: name,
+          developers,
+          publishers,
+          price: currentPrice,
+          releaseDate,
+          appId,
+        };
       });
 
-    await dataset.pushData(response);
+      await dataset.pushData(gameDetails);
+    } catch (e) {
+      console.error(e);
+    }
   });
 };
 
