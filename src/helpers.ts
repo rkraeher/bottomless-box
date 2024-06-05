@@ -25,7 +25,7 @@ interface PriceOverview {
   };
 }
 interface AppDetails {
-  data: PriceOverview;
+  data: { name: string }; // TODO change me
 }
 
 type AppDetailsResponse = Record<string, AppDetails>;
@@ -57,7 +57,6 @@ interface EpicGamesStoreListing {
   url: string;
   originalPrice: string;
   price: string;
-  // currentPrice: string;
 }
 
 export const mergeGameInfo = (
@@ -116,7 +115,7 @@ export async function getEpicStorePrice(
   const prices: string[] =
     (await page
       .locator('span')
-      .filter({ hasText: /CZK|\$|\€/ })
+      .filter({ hasText: /CZK|\$|\€|Free/ })
       .allTextContents()
       .catch((e) => log.error(e))) ?? [];
 
@@ -132,7 +131,6 @@ export async function getEpicStorePrice(
     url: request.url,
     originalPrice,
     price: discountedPrice ?? originalPrice,
-    // TODO originalPrice/currentPrice replaces previous interface that was just using price property. must modify the steam wishlist output, mergeData function and client mapping script.js
   };
 
   const dataset = await Dataset.open('epic');
@@ -151,34 +149,28 @@ export const createSteamWishlistDataset = async (
   await Dataset.open('steam').then((dataset) => dataset.drop()); // reset the dataset, otherwise it will append
   const dataset = await Dataset.open('steam');
 
-  const steamAppIds = Object.keys(wishlist).join(',');
-  const steamAppDetailsEndpoint = `https://store.steampowered.com/api/appdetails?appids=${steamAppIds}&filters=price_overview`; // filters param must be set to price_overview when passing multiple appids
-  const response = await fetch(steamAppDetailsEndpoint);
-  const appDetails: AppDetailsResponse = await response.json();
+  const appIds = Object.keys(wishlist);
+  const devSample = appIds.slice(0, 4);
 
-  const gameData: SteamApiData[] = Object.entries(wishlist)
-    .map(([steamAppId, wishlistData]) => {
-      const matchingGameDetails = Object.entries(appDetails).find(
-        ([appId]) => appId === steamAppId
-      );
+  // appIds.forEach ...
+  devSample.forEach(async (appId) => {
+    // fix the types
+    // AppDetailsResponse;
+    const response: any = await fetch(
+      `https://store.steampowered.com/api/appdetails?appids=${appId}`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        // each response is an object with appId as key, and data is a property on that response object
+        return Object.values(data).map((response: any) => {
+          // developers: string[], publishers: string[], price_overview.final_formatted, and release_date: { coming_soon: boolean, date: string }
+          const { name, developers } = response.data as any;
+          return { name, developers };
+        });
+      });
 
-      if (matchingGameDetails) {
-        const [appId, gameDetails] = matchingGameDetails;
-        const currentPrice =
-          gameDetails?.data?.price_overview?.final_formatted ?? '';
-
-        return {
-          name: wishlistData.name,
-          primaryKey: wishlistData.name,
-          appId,
-          price: currentPrice,
-        };
-      }
-      return;
-    })
-    .filter((game): game is SteamApiData => game !== undefined);
-
-  await dataset.pushData(gameData);
+    await dataset.pushData(response);
+  });
 };
 
 export const partialMatch = (title1: string, title2: string): boolean => {

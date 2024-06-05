@@ -34,22 +34,14 @@ export const handleSearchRequest = async (
       await createSteamWishlistDataset(data);
       const steamGames = await getGames('steam');
 
-      await crawlEpicGames(steamGames);
-      const epicGames = await getGames('epic');
+      // await crawlEpicGames(steamGames);
+      // const epicGames = await getGames('epic');
 
       const map = new Map();
       mergeGameInfo(map, steamGames, 'steam');
-      mergeGameInfo(map, epicGames, 'epic');
+      // mergeGameInfo(map, epicGames, 'epic');
 
       const allGames: GameInfo[] = Array.from(map.values());
-
-      // TODO: sometimes the epic store will give search results for a completely different game (e.g., DREDGE query returns Dead by Daylight)
-      // How should we account for these mismatches?
-      // 1. the partialMatch title matching custom algo (helpers.ts)
-      // *2. release date, publisher, and developer (all this data is available at the following steam endpoint: https://store.steampowered.com/api/appdetails?appids={APP_IDS}
-      // * however, to use that endpoint and get release/publisher/developer data, I must call the endpoint one game at a time
-      // * as that data is not going to change, I can store the results in some DB to avoid having to call the endpoint and getting throttled
-      // * in order to get that data for an epic store game, I need to proceed into the game detail page, passing any ageCheck form, and scrape the data from that page
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(allGames));
