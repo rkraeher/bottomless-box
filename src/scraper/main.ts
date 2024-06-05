@@ -10,6 +10,7 @@ export const crawlEpicGames = async (games: Game[]) => {
     url: `https://store.epicgames.com/en-US/browse?q=${encodeURIComponent(
       game.name
     )}&sortBy=relevancy&sortDir=DESC&count=40`,
+    // can actually use game.primaryKey now
     userData: { primaryKey: game.name },
   }));
 
@@ -24,13 +25,13 @@ export const crawlEpicGames = async (games: Game[]) => {
   await Dataset.open('epic').then((dataset) => dataset.drop()); // reset the epic dataset before crawling
 
   // ? for dev
-  // await crawler.run([requests[0]]);
+  await crawler.run([requests[0]]);
   // await crawler.run([
   //   'https://store.epicgames.com/en-US/browse?q=Alan%20Wake&sortBy=relevancy&sortDir=DESC&count=40',
   // ]);
 
   const slicedRequests = requests.slice(10, 20);
-  await crawler.run(slicedRequests);
+  // await crawler.run(slicedRequests);
 
   // await crawler.run(requests);
 };

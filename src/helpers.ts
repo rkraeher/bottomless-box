@@ -1,4 +1,4 @@
-import { Dataset, Request, log } from 'crawlee';
+import { Dataset, Dictionary, Request, log } from 'crawlee';
 import { Page } from 'playwright';
 import { UserData } from './scraper/routes';
 
@@ -39,7 +39,7 @@ interface AppDetails {
 
 type AppDetailsResponse = Record<string, AppDetails>;
 
-interface GameDetails {
+export interface GameDetails {
   name: string;
   primaryKey: string;
   developers: string[];
@@ -148,7 +148,8 @@ export async function getEpicStorePrice(
   const dataset = await Dataset.open('epic');
   const isDuplicate = await dataset
     .getData()
-    .then((data) => data.items.some((item) => item.primaryKey === primaryKey));
+    .then((data) => data.items.some((item) => item.primaryKey === primaryKey))
+    .catch((e) => log.error(e));
 
   if (!isDuplicate) {
     await dataset.pushData(result);
@@ -165,7 +166,7 @@ export const createSteamWishlistDataset = async (
   const devSample = appIds.slice(0, 10);
 
   // ? for dev but should loop appIds
-  devSample.forEach(async (appId) => {
+  for await (const appId of devSample) {
     try {
       const response: Response = await fetch(
         `https://store.steampowered.com/api/appdetails?appids=${appId}`
@@ -194,7 +195,7 @@ export const createSteamWishlistDataset = async (
     } catch (e) {
       console.error(e);
     }
-  });
+  }
 };
 
 export const partialMatch = (title1: string, title2: string): boolean => {
@@ -220,8 +221,7 @@ export const partialMatch = (title1: string, title2: string): boolean => {
 // const isPartialMatch = partialMatch(gameTitle1, gameTitle2);
 // returns true
 
-export const getGames = async (key: string) => {
-  return (await Dataset.open(key)
-    .then((dataset) => dataset.getData())
-    .then((data) => data.items)) as Game[];
+export const getGames = async (key: string): Promise<GameDetails[]> => {
+  const dataset: Dataset<GameDetails> = await Dataset.open(key);
+  return (await dataset.getData()).items;
 };

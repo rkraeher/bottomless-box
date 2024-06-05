@@ -69,6 +69,9 @@ router.addHandler(
   'DETAIL',
   async ({ request, page, log }: DetailRouteHandler) => {
     log.debug(`Checking detail page for ${request.url}`);
+    // await validateMatch ...
+    // 1. scrape the detail page for data: publishers, developers, and release date
+    // 2. compare it against the matching game in the steam dataset and only scrape prices for those that are exact match
     await getEpicStorePrice(page, request);
   }
 );

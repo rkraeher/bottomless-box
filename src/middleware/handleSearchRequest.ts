@@ -10,6 +10,7 @@ import {
 } from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
+import { Dataset } from 'crawlee';
 
 export const handleSearchRequest = async (
   req: IncomingMessage,
@@ -35,12 +36,12 @@ export const handleSearchRequest = async (
       await createSteamWishlistDataset(data);
       const steamGames = await getGames('steam');
 
-      // await crawlEpicGames(steamGames);
-      // const epicGames = await getGames('epic');
+      await crawlEpicGames(steamGames);
+      const epicGames = await getGames('epic');
 
       const map = new Map();
       mergeGameInfo(map, steamGames, 'steam');
-      // mergeGameInfo(map, epicGames, 'epic');
+      mergeGameInfo(map, epicGames, 'epic');
 
       const allGames: GameInfo[] = Array.from(map.values());
 
