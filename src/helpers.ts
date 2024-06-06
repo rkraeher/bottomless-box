@@ -178,7 +178,10 @@ export const createSteamWishlistDataset = async (
           game.data;
 
         const currentPrice = price_overview?.final_formatted ?? '';
-        const releaseDate = release_date?.date ?? '';
+        const releaseDate =
+          new Date(release_date?.date.concat(' UTC'))
+            .toISOString()
+            .substring(0, 10) ?? '';
 
         return {
           name,

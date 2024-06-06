@@ -71,7 +71,40 @@ router.addHandler(
     log.debug(`Checking detail page for ${request.url}`);
     // await validateMatch ...
     // 1. scrape the detail page for data: publishers, developers, and release date
+    const developer = await page
+      .getByText('Developer', { exact: true })
+      .locator('+ div > span')
+      .textContent()
+      .catch((e) => log.error(e));
+
+    const publisher = await page
+      .getByText('Publisher', { exact: true })
+      .locator('+ div > span')
+      .textContent()
+      .catch((e) => log.error(e));
+
+    const initialReleaseDate = await page
+      .getByText('Initial Release', { exact: true })
+      .locator('+ div time')
+      .getAttribute('datetime')
+      .catch((e) => log.error(e));
+
+    const formattedReleaseDate =
+      initialReleaseDate &&
+      new Date(initialReleaseDate).toISOString().substring(0, 10);
+
+    const result = {
+      developer,
+      publisher,
+      releaseDate: formattedReleaseDate,
+      userData: request.userData,
+    };
+
+    console.log({ result });
+
     // 2. compare it against the matching game in the steam dataset and only scrape prices for those that are exact match
+    // open the steam dataset
+    // use the primaryKey (which I think we should now use appId instead of name) to find the
     await getEpicStorePrice(page, request);
   }
 );
