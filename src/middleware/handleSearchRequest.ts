@@ -1,16 +1,11 @@
 import { IncomingMessage, ServerResponse } from 'http';
 import {
-  Game,
-  GameInfo,
   isValidSteamWishlist,
-  mergeGameInfo,
-  createSteamWishlistDataset,
-  getGames,
+  addSteamGameDetailsToStore,
   WishlistResponse,
 } from '../helpers';
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
-import { Dataset } from 'crawlee';
 
 export const handleSearchRequest = async (
   req: IncomingMessage,
@@ -19,34 +14,26 @@ export const handleSearchRequest = async (
   const url = new URL(`http://${host}:${port}${req.url}`);
   const steamId = url.searchParams.get('steamId');
 
-  // TODO: instead of running the scraper on request, after the first time, I can cache the results and run the scraper once a day. Then add some 'refresh' feature
-
   try {
     //?? const userId = '76561198067142342';
-    const steamWishlistEndpoint = `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=0`;
-    const response: Response = await fetch(steamWishlistEndpoint);
-    const data: WishlistResponse = await response.json();
+    const response: Response = await fetch(
+      `https://store.steampowered.com/wishlist/profiles/${steamId}/wishlistdata/?p=0`
+    );
+    const wishlistData: WishlistResponse = await response.json();
 
-    if (!isValidSteamWishlist(data)) {
+    if (!isValidSteamWishlist(wishlistData)) {
       // need to inform user in client
       console.info(
         'No wishlist found for this id. Double-check the id and make sure your Steam account is set to public.'
       );
     } else {
-      await createSteamWishlistDataset(data);
-      const steamGames = await getGames('steam');
-
-      await crawlEpicGames(steamGames);
-      const epicGames = await getGames('epic');
-
-      const map = new Map();
-      mergeGameInfo(map, steamGames, 'steam');
-      mergeGameInfo(map, epicGames, 'epic');
-
-      const allGames: GameInfo[] = Array.from(map.values());
+      await addSteamGameDetailsToStore(wishlistData);
+      await crawlEpicGames(wishlistData);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(allGames));
+      // const allGames: GameInfo[] = Array.from(map.values());
+      // TODO: map the full prospectorStore in the JSON response
+      res.end(JSON.stringify([]));
     }
   } catch (error) {
     console.error('Error:', error);

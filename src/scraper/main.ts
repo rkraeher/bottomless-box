@@ -1,17 +1,25 @@
-import { Dataset, PlaywrightCrawler, log } from 'crawlee';
+import { PlaywrightCrawler, log } from 'crawlee';
 import { router } from './routes';
-import { Game } from '../helpers';
+import { WishlistResponse } from '../helpers';
 
-export const crawlEpicGames = async (games: Game[]) => {
+type WishlistGames = Array<{ id: string; name: string }>;
+
+export const crawlEpicGames = async (wishlist: WishlistResponse) => {
   // This is better set with CRAWLEE_LOG_LEVEL env var or a configuration option.
   log.setLevel(log.LEVELS.DEBUG);
 
-  const requests = games.map((game) => ({
+  const gamesToQuery: WishlistGames = Object.entries(wishlist).map(
+    ([id, game]) => ({
+      id,
+      name: game.name,
+    })
+  );
+
+  const requests = gamesToQuery.map((game) => ({
     url: `https://store.epicgames.com/en-US/browse?q=${encodeURIComponent(
       game.name
     )}&sortBy=relevancy&sortDir=DESC&count=40`,
-    // can actually use game.primaryKey now
-    userData: { primaryKey: game.name },
+    userData: { id: game.id },
   }));
 
   const crawler = new PlaywrightCrawler({
@@ -21,8 +29,6 @@ export const crawlEpicGames = async (games: Game[]) => {
     maxRequestRetries: 2,
     // failedRequestHandler
   });
-
-  await Dataset.open('epic').then((dataset) => dataset.drop()); // reset the epic dataset before crawling
 
   // ? for dev
   await crawler.run([requests[0]]);

@@ -1,20 +1,12 @@
-import { Dataset, Dictionary, Request, log } from 'crawlee';
+import { KeyValueStore, Request, log } from 'crawlee';
 import { Page } from 'playwright';
 import { UserData } from './scraper/routes';
 
 // await page.pause(); //!! debugging
 // npx playwright codegen {url} //!! locator generator
 
-interface Sub {
-  price: string;
-}
+export type WishlistResponse = Record<AppId, any>;
 
-interface SteamGame {
-  name: string;
-  subs: Sub[] | [];
-}
-
-export type WishlistResponse = Record<string, SteamGame>;
 type FailedSteamWishlistResponse = { success: 2 };
 
 interface PriceOverview {
@@ -27,70 +19,41 @@ interface ReleaseDate {
   coming_soon: boolean;
   date: string;
 }
-interface AppDetails {
-  data: {
-    name: string;
-    developers: string[];
-    publishers: string[];
-    price_overview: PriceOverview;
-    release_date: ReleaseDate;
-  };
-}
 
-type AppDetailsResponse = Record<string, AppDetails>;
-
-export interface GameDetails {
+interface GameData {
   name: string;
-  primaryKey: string;
   developers: string[];
   publishers: string[];
-  price: string;
-  releaseDate: string;
-  appId: string;
+  price_overview: PriceOverview;
+  release_date: ReleaseDate;
 }
-export interface Game {
-  primaryKey: string;
+type AppDetails = { data: GameData };
+type AppId = string;
+type AppDetailsResponse = Record<AppId, AppDetails>;
+
+export interface GameDetails {
+  id: string;
   name: string;
   price: string;
-  url?: string;
+  developers: string[];
+  publishers: string[];
+  releaseDate: string;
 }
-
-export interface GameInfo {
-  key: string;
-  steam?: Omit<Game, 'primaryKey'>;
-  epic?: Omit<Game, 'primaryKey'>;
-}
-
-export type BaseMap = Map<string, GameInfo>;
 
 interface EpicGamesStoreListing {
+  id: string;
   name: string;
-  primaryKey: string;
   url: string;
   originalPrice: string;
   price: string;
 }
 
-export const mergeGameInfo = (
-  baseMap: BaseMap,
-  games: Game[],
-  platformKey: 'steam' | 'epic'
-) => {
-  games.forEach((game) => {
-    const existingInfo = baseMap.get(game.primaryKey) ?? {
-      key: game.primaryKey,
-    };
-
-    baseMap.set(game.primaryKey, {
-      ...existingInfo,
-      [platformKey]: {
-        name: game.name,
-        price: game.price,
-        ...(platformKey === 'epic' && { url: game.url }),
-      },
-    });
-  });
-};
+interface EpicStoreDetails {
+  developer: string;
+  publisher: string;
+  releaseDate: string;
+  userData: UserData;
+}
 
 // we also should have some sanitization since it is user input
 export const isValidSteamWishlist = (
@@ -122,7 +85,7 @@ export async function getEpicStorePrice(
   page: Page,
   request: Request<UserData>
 ) {
-  const { primaryKey, game } = request.userData;
+  const { id, game } = request.userData;
 
   const prices: string[] =
     (await page
@@ -138,30 +101,19 @@ export async function getEpicStorePrice(
   const [originalPrice, discountedPrice] = prices && prices.slice(0, 2);
 
   const result: EpicGamesStoreListing = {
+    id,
     name: game,
-    primaryKey,
     url: request.url,
     originalPrice,
     price: discountedPrice ?? originalPrice,
   };
 
-  const dataset = await Dataset.open('epic');
-  const isDuplicate = await dataset
-    .getData()
-    .then((data) => data.items.some((item) => item.primaryKey === primaryKey))
-    .catch((e) => log.error(e));
-
-  if (!isDuplicate) {
-    await dataset.pushData(result);
-  }
+  // TODO: add non-duplicate result to the prospectorStore
 }
 
-export const createSteamWishlistDataset = async (
+export const addSteamGameDetailsToStore = async (
   wishlist: WishlistResponse
 ): Promise<void> => {
-  await Dataset.open('steam').then((dataset) => dataset.drop()); // reset the dataset, otherwise it will append
-  const dataset = await Dataset.open('steam');
-
   const appIds = Object.keys(wishlist);
   const devSample = appIds.slice(0, 10);
 
@@ -171,30 +123,32 @@ export const createSteamWishlistDataset = async (
       const response: Response = await fetch(
         `https://store.steampowered.com/api/appdetails?appids=${appId}`
       );
-      const data: AppDetailsResponse = await response.json();
+      const jsonResponse: AppDetailsResponse = await response.json();
+      const gameData = Object.values(jsonResponse)[0]?.data;
 
-      const gameDetails: GameDetails[] = Object.values(data).map((game) => {
-        const { name, developers, publishers, price_overview, release_date } =
-          game.data;
+      const { name, developers, publishers, price_overview, release_date } =
+        gameData;
 
-        const currentPrice = price_overview?.final_formatted ?? '';
-        const releaseDate =
-          new Date(release_date?.date.concat(' UTC'))
-            .toISOString()
-            .substring(0, 10) ?? '';
+      const currentPrice = price_overview?.final_formatted ?? '';
 
-        return {
-          name,
-          primaryKey: name,
-          developers,
-          publishers,
-          price: currentPrice,
-          releaseDate,
-          appId,
-        };
+      const releaseDate =
+        new Date(release_date?.date.concat(' UTC'))
+          .toISOString()
+          .substring(0, 10) ?? '';
+
+      const gameDetails: GameDetails = {
+        id: appId,
+        name,
+        price: currentPrice,
+        developers,
+        publishers,
+        releaseDate,
+      };
+
+      const store = await KeyValueStore.open('prospectorStore');
+      await store.setValue(appId, {
+        steam: gameDetails,
       });
-
-      await dataset.pushData(gameDetails);
     } catch (e) {
       console.error(e);
     }
@@ -224,7 +178,18 @@ export const partialMatch = (title1: string, title2: string): boolean => {
 // const isPartialMatch = partialMatch(gameTitle1, gameTitle2);
 // returns true
 
-export const getGames = async (key: string): Promise<GameDetails[]> => {
-  const dataset: Dataset<GameDetails> = await Dataset.open(key);
-  return (await dataset.getData()).items;
+export const validateMatch = (steam: GameDetails, epic: EpicStoreDetails) => {
+  if (!steam.developers.includes(epic.developer)) {
+    return false;
+  }
+
+  if (!steam.publishers.includes(epic.publisher)) {
+    return false;
+  }
+
+  if (steam.releaseDate !== epic.releaseDate) {
+    return false;
+  }
+
+  return true;
 };
