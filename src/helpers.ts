@@ -1,6 +1,5 @@
-import { KeyValueStore, Request, log } from 'crawlee';
+import { KeyValueStore, log } from 'crawlee';
 import { Page } from 'playwright';
-import { UserData } from './scraper/routes';
 
 // await page.pause(); //!! debugging
 // npx playwright codegen {url} //!! locator generator
@@ -34,25 +33,11 @@ type AppDetailsResponse = Record<AppId, AppDetails>;
 export interface GameDetails {
   id: string;
   name: string;
-  price: string;
+  price: string | undefined;
+  url: string;
   developers: string[];
   publishers: string[];
   releaseDate: string;
-}
-
-interface EpicGamesStoreListing {
-  id: string;
-  name: string;
-  url: string;
-  originalPrice: string;
-  price: string;
-}
-
-interface EpicStoreDetails {
-  developer: string;
-  publisher: string;
-  releaseDate: string;
-  userData: UserData;
 }
 
 // we also should have some sanitization since it is user input
@@ -81,12 +66,7 @@ async function fillAgeCheckForm(page: Page) {
   await page.getByRole('button', { name: 'Continue' }).click();
 }
 
-export async function getEpicStorePrice(
-  page: Page,
-  request: Request<UserData>
-) {
-  const { id, game } = request.userData;
-
+export async function getEpicStorePrice(page: Page): Promise<string> {
   const prices: string[] =
     (await page
       .locator('span')
@@ -99,16 +79,11 @@ export async function getEpicStorePrice(
   // free price: https://store.epicgames.com/en-US/p/the-invincible-iron-ivyenter-the-pretty-pretty-princess-ed912d
 
   const [originalPrice, discountedPrice] = prices && prices.slice(0, 2);
+  console.log('prices: ', prices);
+  // maybe if the length of discountedPrice is excessive, it tells us its matching some large string,
+  // and we should just use originalPrice instead
 
-  const result: EpicGamesStoreListing = {
-    id,
-    name: game,
-    url: request.url,
-    originalPrice,
-    price: discountedPrice ?? originalPrice,
-  };
-
-  // TODO: add non-duplicate result to the prospectorStore
+  return discountedPrice ?? originalPrice;
 }
 
 export const addSteamGameDetailsToStore = async (
@@ -140,15 +115,14 @@ export const addSteamGameDetailsToStore = async (
         id: appId,
         name,
         price: currentPrice,
+        url: `https://store.steampowered.com/app/${appId}`,
         developers,
         publishers,
         releaseDate,
       };
 
       const store = await KeyValueStore.open('prospectorStore');
-      await store.setValue(appId, {
-        steam: gameDetails,
-      });
+      await store.setValue(appId, { id: appId, steam: gameDetails });
     } catch (e) {
       console.error(e);
     }
@@ -178,12 +152,13 @@ export const partialMatch = (title1: string, title2: string): boolean => {
 // const isPartialMatch = partialMatch(gameTitle1, gameTitle2);
 // returns true
 
-export const validateMatch = (steam: GameDetails, epic: EpicStoreDetails) => {
-  if (!steam.developers.includes(epic.developer)) {
+// TODO: this is too precise and gives too many false negatives when data isn't perfectly aligned
+export const validateMatch = (steam: GameDetails, epic: GameDetails) => {
+  if (!steam.developers.includes(epic.developers[0])) {
     return false;
   }
 
-  if (!steam.publishers.includes(epic.publisher)) {
+  if (!steam.publishers.includes(epic.publishers[0])) {
     return false;
   }
 

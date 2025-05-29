@@ -14,9 +14,10 @@ import {
   validateMatch,
 } from '../helpers';
 
+// crawlee-specific object used to pass custom user-defined data
 export interface UserData {
   id: string;
-  game: string;
+  name: string;
 }
 interface DetailRouteHandler {
   request: Request<UserData>;
@@ -25,6 +26,7 @@ interface DetailRouteHandler {
 }
 
 interface Listings {
+  id: string;
   steam: GameDetails;
   epic: GameDetails;
 }
@@ -65,8 +67,8 @@ router.addDefaultHandler(async ({ request, page, log, enqueueLinks }) => {
   const regex = new RegExp(link);
 
   const userData: UserData = {
-    game: foundGame,
     id: request.userData.id,
+    name: foundGame,
   };
 
   await enqueueLinks({
@@ -99,38 +101,48 @@ router.addHandler(
       .textContent()
       .catch((e) => log.error(e));
 
-    const initialReleaseDate = await page
+    const initialRelease = await page
       .getByText('Initial Release', { exact: true })
       .locator('+ div time')
       .getAttribute('datetime')
       .catch((e) => log.error(e));
 
-    const formattedReleaseDate =
-      initialReleaseDate &&
-      new Date(initialReleaseDate).toISOString().substring(0, 10);
+    const releaseDate = await page
+      .getByText('Release Date', { exact: true })
+      .locator('+ div time')
+      .getAttribute('datetime')
+      .catch((e) => log.error(e));
 
-    const epicStoreDetails = {
-      developer: developer ?? '',
-      publisher: publisher ?? '',
+    // alternatives we can use a regex for release, but we have to select first match
+
+    const formattedReleaseDate = initialRelease
+      ? initialRelease &&
+        new Date(initialRelease).toISOString().substring(0, 10)
+      : releaseDate && new Date(releaseDate).toISOString().substring(0, 10);
+
+    const epicStoreDetails: GameDetails = {
+      id: request.userData.id,
+      name: request.userData.name,
+      price: undefined,
+      url: request.url,
+      developers: [developer ?? ''],
+      publishers: [publisher ?? ''],
       releaseDate: formattedReleaseDate ?? '',
-      userData: request.userData,
     };
 
     if (steamListing) {
       const isExactMatch = validateMatch(steamListing, epicStoreDetails);
+      const isDuplicate = listing.hasOwnProperty('epic');
+      // const isDuplicate = listing?.epic?.id
 
-      if (isExactMatch) {
-        // ? just for testing. instead, getEpicStorePrice from here and update the store inside that fn
-        await prospectorStore.setValue(request.userData.id, {
-          ...listing,
-          epic: epicStoreDetails,
-        });
-      }
+      // if (isExactMatch && !isDuplicate) {
+      const price = await getEpicStorePrice(page);
+
+      await prospectorStore.setValue(request.userData.id, {
+        ...listing,
+        epic: { ...epicStoreDetails, price },
+      });
+      // }
     }
-
-    console.log({ epicStoreDetails });
-    console.log('steam listing: ', steamListing);
-    // move me up inside the isExactMatch block
-    await getEpicStorePrice(page, request);
   }
 );

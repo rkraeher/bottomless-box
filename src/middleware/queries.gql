@@ -1,0 +1,52 @@
+ https://graphql.epicgames.com/graphql?query=query searchStoreQuery(
+  $allowCountries: String
+  $category: String
+  $namespace: String
+  $itemNs: String
+  $sortBy: String
+  $sortDir: String
+  $start: Int
+  $tag: String
+  $releaseDate: String
+  $withPrice: Boolean = true
+) {
+  Catalog {
+    searchStore(
+      allowCountries: $allowCountries
+      category: $category
+      count: 1
+      country: "US"
+      keywords: "This War of Mine"
+      namespace: $namespace
+      itemNs: $itemNs
+      sortBy: $sortBy
+      sortDir: $sortDir
+      releaseDate: $releaseDate
+      start: $start
+      tag: $tag
+    ) {
+      elements {
+        title
+        description
+        keyImages {
+          type
+          url
+        }
+        seller {
+          name
+        }
+        categories {
+          path
+        }
+        price(country: "US") @include(if: $withPrice) {
+          totalPrice {
+            fmtPrice(locale: "en-US") {              
+              discountPrice             
+            }
+          }
+        }
+
+      }
+    }
+  }
+}
