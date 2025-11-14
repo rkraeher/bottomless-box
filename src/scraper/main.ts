@@ -1,23 +1,13 @@
 import { PlaywrightCrawler, log } from 'crawlee';
 import { router } from './routes';
-import { WishlistResponse } from '../helpers';
 
-type WishlistGames = Array<{ id: string; name: string }>;
-
-export const crawlEpicGames = async (wishlist: WishlistResponse) => {
+export const crawlEpicGames = async (games: Array<Record<string, any>>) => {
   // This is better set with CRAWLEE_LOG_LEVEL env var or a configuration option.
   log.setLevel(log.LEVELS.DEBUG);
 
-  const gamesToQuery: WishlistGames = Object.entries(wishlist).map(
-    ([id, game]) => ({
-      id,
-      name: game.name,
-    })
-  );
-
-  const requests = gamesToQuery.map((game) => ({
+  const requests = games.map((game) => ({
     url: `https://store.epicgames.com/en-US/browse?q=${encodeURIComponent(
-      game.name
+      game?.steam?.name
     )}&sortBy=relevancy&sortDir=DESC&count=40`,
     userData: { id: game.id },
   }));
@@ -30,14 +20,9 @@ export const crawlEpicGames = async (wishlist: WishlistResponse) => {
     // failedRequestHandler
   });
 
-  // ? for dev
-  // await crawler.run([requests[0]]);
-  // await crawler.run([
-  //   'https://store.epicgames.com/en-US/browse?q=Alan%20Wake&sortBy=relevancy&sortDir=DESC&count=40',
-  // ]);
+  //* for dev:
+  // const slicedRequests = requests.slice(0, 5);
+  // await crawler.run(slicedRequests);
 
-  const slicedRequests = requests.slice(0, 5);
-  await crawler.run(slicedRequests);
-
-  // await crawler.run(requests);
+  await crawler.run(requests);
 };

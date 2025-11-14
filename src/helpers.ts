@@ -4,7 +4,9 @@ import { Page } from 'playwright';
 // await page.pause(); //!! debugging
 // npx playwright codegen {url} //!! locator generator
 
-export type WishlistResponse = Record<AppId, any>;
+export type WishlistResponse = {
+  response: { items: Array<Record<string, any>> };
+};
 
 type FailedSteamWishlistResponse = { success: 2 };
 
@@ -40,7 +42,7 @@ export interface GameDetails {
   releaseDate: string;
 }
 
-// we also should have some sanitization since it is user input
+// we also should have some sanitisation since it is user input
 export const isValidSteamWishlist = (
   data: WishlistResponse | FailedSteamWishlistResponse
 ): boolean => !('success' in data);
@@ -79,24 +81,19 @@ export async function getEpicStorePrice(page: Page): Promise<string> {
   // free price: https://store.epicgames.com/en-US/p/the-invincible-iron-ivyenter-the-pretty-pretty-princess-ed912d
 
   const [originalPrice, discountedPrice] = prices && prices.slice(0, 2);
-  console.log('prices: ', prices);
-  // maybe if the length of discountedPrice is excessive, it tells us its matching some large string,
-  // and we should just use originalPrice instead
 
   return discountedPrice ?? originalPrice;
 }
 
 export const addSteamGameDetailsToStore = async (
-  wishlist: WishlistResponse
+  gameIds: Array<string>
 ): Promise<void> => {
-  const appIds = Object.keys(wishlist);
-  const devSample = appIds.slice(0, 10);
-
-  // ? for dev but should loop appIds
-  for await (const appId of devSample) {
+  // ? for dev but should loop all gameIds
+  const devSample = gameIds.slice(0, 10);
+  for await (const id of devSample) {
     try {
       const response: Response = await fetch(
-        `https://store.steampowered.com/api/appdetails?appids=${appId}`
+        `https://store.steampowered.com/api/appdetails?appids=${id}`
       );
       const jsonResponse: AppDetailsResponse = await response.json();
       const gameData = Object.values(jsonResponse)[0]?.data;
@@ -112,17 +109,17 @@ export const addSteamGameDetailsToStore = async (
           .substring(0, 10) ?? '';
 
       const gameDetails: GameDetails = {
-        id: appId,
+        id,
         name,
         price: currentPrice,
-        url: `https://store.steampowered.com/app/${appId}`,
+        url: `https://store.steampowered.com/app/${id}`,
         developers,
         publishers,
         releaseDate,
       };
 
       const store = await KeyValueStore.open('prospectorStore');
-      await store.setValue(appId, { id: appId, steam: gameDetails });
+      await store.setValue(id, { id, steam: gameDetails });
     } catch (e) {
       console.error(e);
     }

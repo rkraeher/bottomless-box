@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const populateTable = (game) => {
       const clone = document.importNode(rowTemplate.content, true);
 
-      clone.querySelector('.title').textContent = game.key;
+      // clone.querySelector('.title').textContent = game.key;
+      clone.querySelector('.title').textContent = game?.steam?.name;
       // also wrap it an anchor link to this, item.url
       clone.querySelector('.epic').textContent = game?.epic?.price ?? '';
       clone.querySelector('.steam').textContent = game?.steam?.price ?? '';

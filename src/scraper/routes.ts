@@ -113,7 +113,7 @@ router.addHandler(
       .getAttribute('datetime')
       .catch((e) => log.error(e));
 
-    // alternatives we can use a regex for release, but we have to select first match
+    // alternatively we can use a regex for release, but we have to select first match
 
     const formattedReleaseDate = initialRelease
       ? initialRelease &&
@@ -135,14 +135,14 @@ router.addHandler(
       const isDuplicate = listing.hasOwnProperty('epic');
       // const isDuplicate = listing?.epic?.id
 
-      // if (isExactMatch && !isDuplicate) {
-      const price = await getEpicStorePrice(page);
+      if (isExactMatch && !isDuplicate) {
+        const price = await getEpicStorePrice(page);
 
-      await prospectorStore.setValue(request.userData.id, {
-        ...listing,
-        epic: { ...epicStoreDetails, price },
-      });
-      // }
+        await prospectorStore.setValue(request.userData.id, {
+          ...listing,
+          epic: { ...epicStoreDetails, price },
+        });
+      }
     }
   }
 );
