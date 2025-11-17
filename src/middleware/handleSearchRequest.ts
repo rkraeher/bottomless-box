@@ -7,6 +7,7 @@ import {
 import { host, port } from '../server';
 import { crawlEpicGames } from '../scraper/main';
 import { KeyValueStore } from 'crawlee';
+import sampleResults from '../../demo/sampleResults';
 
 export const handleSearchRequest = async (
   req: IncomingMessage,
@@ -30,7 +31,7 @@ export const handleSearchRequest = async (
       );
     } else {
       const prospectorStore = await KeyValueStore.open('prospectorStore');
-      // await prospectorStore.drop();
+      // await prospectorStore.drop(); // should drop the store
 
       await addSteamGameDetailsToStore(gameIds);
 
@@ -42,10 +43,12 @@ export const handleSearchRequest = async (
         if (gameDetails) games.push(gameDetails);
       });
 
-      await crawlEpicGames(games);
+      //** Temporarily disable the crawl for demo **
+      // await crawlEpicGames(games);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(games));
+      // res.end(JSON.stringify(games));
+      res.end(JSON.stringify(sampleResults));
     }
   } catch (error) {
     console.error('Error:', error);
