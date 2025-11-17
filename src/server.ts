@@ -1,6 +1,6 @@
 import http, { IncomingMessage, ServerResponse } from 'http';
-import { handleStaticFileRequest } from './middleware/handleStaticFileRequest';
-import { handleSearchRequest } from './middleware/handleSearchRequest';
+import { handleStaticFileRequest } from './middleware/handleStaticFileRequest.js';
+import { handleSearchRequest } from './middleware/handleSearchRequest.js';
 
 // process.env
 export const host = 'localhost';
