@@ -4,7 +4,7 @@ import {
   addSteamGameDetailsToStore,
   WishlistResponse,
 } from '../helpers.js';
-import { host, port } from '../server.js';
+import { port } from '../server.js';
 import { crawlEpicGames } from '../scraper/main';
 import { KeyValueStore } from 'crawlee';
 import sampleResults from '../../demo/sampleResults.js';
@@ -13,7 +13,7 @@ export const handleSearchRequest = async (
   req: IncomingMessage,
   res: ServerResponse
 ) => {
-  const url = new URL(`http://${host}:${port}${req.url}`);
+  const url = new URL(`http://0.0.0.0:${port}${req.url}`); // use localhost for dev and 0.0.0.0 for render deployment
   const demoProfileId = '76561198768181711';
   const steamId = url.searchParams.get('steamId') || demoProfileId;
   // const getWishlistEndpoint = `https://api.steampowered.com/IWishlistService/GetWishlist/v1?steamid=${steamId}`;

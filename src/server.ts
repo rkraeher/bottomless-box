@@ -2,9 +2,7 @@ import http, { IncomingMessage, ServerResponse } from 'http';
 import { handleStaticFileRequest } from './middleware/handleStaticFileRequest.js';
 import { handleSearchRequest } from './middleware/handleSearchRequest.js';
 
-// process.env
-export const host = 'localhost';
-export const port = 8000;
+export const port = process.env.PORT ? Number(process.env.PORT) : 8000;
 
 const requestListener = async (req: IncomingMessage, res: ServerResponse) => {
   if (req.url?.startsWith('/search')) {
@@ -15,6 +13,6 @@ const requestListener = async (req: IncomingMessage, res: ServerResponse) => {
 };
 
 const server = http.createServer(requestListener);
-server.listen(port, host, () => {
-  console.log(`Server is running on http://${host}:${port}`);
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
